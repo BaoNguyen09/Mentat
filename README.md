@@ -15,6 +15,110 @@ Mentat is a table-tennis-first AI sports coach built for the Gemini Live Agent C
 - `apps/web`: React PWA frontend
 - `packages/types`: shared TypeScript contracts
 
+## Local setup
+
+### Requirements
+
+- Node.js 22+ recommended
+- npm 11+
+- A Gemini API key if you want the real Live API path
+
+### Install
+
+From the repo root:
+
+```bash
+npm install
+```
+
+### Environment
+
+Copy the API env example and fill in your values:
+
+```bash
+copy apps\\api\\.env.example apps\\api\\.env
+```
+
+Set at least:
+
+```env
+GEMINI_API_KEY=your_key_here
+PORT=8000
+```
+
+Notes:
+
+- `apps/api/.env` is loaded automatically by the API on startup.
+- If `GEMINI_API_KEY` is empty, Mentat falls back to the mock live bridge so you can still test the flow locally.
+- Leave `FIRESTORE_EMULATOR_HOST` empty for now. Firestore is not wired yet in the current MVP.
+
+### Start the API
+
+From `apps/api`:
+
+```bash
+npm run dev
+```
+
+The API runs at:
+
+```text
+http://127.0.0.1:8000
+```
+
+### Start the web app
+
+From `apps/web`:
+
+```bash
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+The web app runs at:
+
+```text
+http://127.0.0.1:5173
+```
+
+### Run both
+
+Open two terminals:
+
+Terminal 1:
+
+```bash
+cd apps/api
+npm run dev
+```
+
+Terminal 2:
+
+```bash
+cd apps/web
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+### Verify the app
+
+1. Open `http://127.0.0.1:5173`
+2. Enter a user id such as `alex-demo`
+3. Pick a coaching personality
+4. Start a session
+5. Allow camera and microphone access
+6. End the session to see the post-session analysis flow
+
+If the Gemini key is configured correctly, the live session uses the real Gemini bridge.
+If not, the same flow runs in mock mode so camera, mic, UI state, and finalize flow can still be tested.
+
+## Build and typecheck
+
+From the repo root:
+
+```bash
+npm run typecheck
+npm run build
+```
+
 ## Notes
 
 - The hackathon MVP is intentionally scoped to one sport: table tennis.
