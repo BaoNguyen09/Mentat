@@ -1,9 +1,12 @@
 import { createAdaptorServer } from "@hono/node-server";
 import { Hono } from "hono";
 
+import { loadEnvironment } from "./lib/env";
 import { progressRoutes } from "./routes/progress";
 import { sessionRoutes } from "./routes/sessions";
 import { attachLiveSessionBridge } from "./ws/session";
+
+loadEnvironment();
 
 const app = new Hono();
 
