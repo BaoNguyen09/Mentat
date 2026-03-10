@@ -393,6 +393,14 @@ button {
   color: #f7f3e5;
 }
 
+.live-preview__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .live-preview__badge,
 .status-chip {
   min-height: 32px;
@@ -526,6 +534,11 @@ button {
 
 .timeline-item__dot--analysis {
   background: var(--warning);
+}
+
+.timeline-item__dot--user {
+  background: rgba(247, 243, 229, 0.92);
+  box-shadow: inset 0 0 0 2px rgba(36, 57, 66, 0.28);
 }
 
 .timeline-item__label,

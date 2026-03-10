@@ -7,6 +7,8 @@ import type {
   SessionContextResponse,
 } from "@mentat/types";
 
+import { createLiveSessionBridge, releaseLiveSession } from "../ws/session";
+
 export const sessionRoutes = new Hono()
   .get("/context/:userId", (c) => {
     const userId = c.req.param("userId");
@@ -30,10 +32,15 @@ export const sessionRoutes = new Hono()
   })
   .post("/start", async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as StartSessionRequest;
+    const bridge = createLiveSessionBridge({
+      userId: body.userId,
+      domain: body.domain,
+      personality: body.personality,
+    });
     const response: StartSessionResponse = {
-      sessionId: `session-${Date.now()}`,
-      wsUrl: `/ws/session`,
-      status: "connecting",
+      sessionId: bridge.sessionId,
+      wsUrl: bridge.wsUrl,
+      status: bridge.status,
     };
     return c.json(response);
   })
@@ -41,6 +48,9 @@ export const sessionRoutes = new Hono()
     const body = (await c.req.json().catch(
       () => ({})
     )) as FinalizeSessionRequest;
+    if (body.sessionId) {
+      releaseLiveSession(body.sessionId);
+    }
     const response: FinalizeSessionResponse = {
       status: "complete",
       summary: {

@@ -1,6 +1,7 @@
+import { useEffect, useRef } from "react";
 import { RotateCcw, Square } from "lucide-react";
 
-import type { SessionStatus } from "@mentat/types";
+import type { LiveBridgeProvider, SessionStatus } from "@mentat/types";
 
 import type { SessionEvent } from "../hooks/useSession";
 import { cx, formatDuration, formatSessionDate } from "../lib/utils";
@@ -10,6 +11,8 @@ interface SessionExperienceCardProps {
   status: SessionStatus;
   sessionId: string | null;
   wsUrl: string | null;
+  bridgeProvider: LiveBridgeProvider | null;
+  mediaStream: MediaStream | null;
   sessionSeconds: number;
   events: SessionEvent[];
   error: string | null;
@@ -30,13 +33,28 @@ export function SessionExperienceCard({
   status,
   sessionId,
   wsUrl,
+  bridgeProvider,
+  mediaStream,
   sessionSeconds,
   events,
   error,
   onFinalize,
   onReset,
 }: SessionExperienceCardProps) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const visibleEvents = [...events].reverse().slice(0, 6);
+
+  useEffect(() => {
+    if (!videoRef.current) {
+      return;
+    }
+
+    videoRef.current.srcObject = mediaStream;
+
+    if (mediaStream) {
+      void videoRef.current.play().catch(() => undefined);
+    }
+  }, [mediaStream]);
 
   return (
     <SurfaceCard
@@ -52,7 +70,17 @@ export function SessionExperienceCard({
       <div className="stack-md">
         <div className="live-preview">
           <div className="live-preview__frame">
-            <div className="live-preview__badge">Phone camera</div>
+            {mediaStream ? (
+              <video
+                className="live-preview__video"
+                muted
+                playsInline
+                ref={videoRef}
+              />
+            ) : null}
+            <div className="live-preview__badge">
+              {bridgeProvider ? `${bridgeProvider} bridge` : "Phone camera"}
+            </div>
             <div className="live-preview__copy">
               <p className="eyebrow">Live coaching stance</p>
               <h3>Side-on full-body view</h3>
@@ -71,6 +99,10 @@ export function SessionExperienceCard({
             <div className="mini-panel">
               <span className="mini-panel__label">Bridge path</span>
               <strong>{wsUrl ?? "/ws/session"}</strong>
+            </div>
+            <div className="mini-panel">
+              <span className="mini-panel__label">Video + audio</span>
+              <strong>{mediaStream ? "Streaming" : "Not started"}</strong>
             </div>
           </div>
         </div>

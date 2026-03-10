@@ -99,8 +99,10 @@ export function App() {
           />
 
           <SessionExperienceCard
+            bridgeProvider={session.bridgeProvider}
             error={session.error}
             events={session.events}
+            mediaStream={session.mediaStream}
             onFinalize={session.finalizeCurrentSession}
             onReset={session.resetSession}
             sessionId={session.sessionId}

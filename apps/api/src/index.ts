@@ -1,8 +1,9 @@
-import { serve } from "@hono/node-server";
+import { createAdaptorServer } from "@hono/node-server";
 import { Hono } from "hono";
 
 import { progressRoutes } from "./routes/progress";
 import { sessionRoutes } from "./routes/sessions";
+import { attachLiveSessionBridge } from "./ws/session";
 
 const app = new Hono();
 
@@ -19,12 +20,12 @@ app.route("/api/progress", progressRoutes);
 
 const port = Number(process.env.PORT ?? 8000);
 
-serve(
-  {
-    fetch: app.fetch,
-    port,
-  },
-  () => {
-    console.log(`Mentat API listening on ${port}`);
-  },
-);
+const server = createAdaptorServer({
+  fetch: app.fetch,
+});
+
+attachLiveSessionBridge(server);
+
+server.listen(port, () => {
+  console.log(`Mentat API listening on ${port}`);
+});

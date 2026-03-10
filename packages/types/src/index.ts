@@ -97,6 +97,80 @@ export interface StartSessionResponse {
   status: SessionStatus;
 }
 
+export type LiveBridgeProvider = "gemini" | "mock";
+
+export type LiveClientMessage =
+  | {
+      type: "text";
+      text: string;
+    }
+  | {
+      type: "audio";
+      data: string;
+      mimeType: string;
+    }
+  | {
+      type: "video";
+      data: string;
+      mimeType: string;
+    }
+  | {
+      type: "activity-start";
+    }
+  | {
+      type: "activity-end";
+    }
+  | {
+      type: "audio-end";
+    }
+  | {
+      type: "ping";
+    };
+
+export type LiveServerMessage =
+  | {
+      type: "session-ready";
+      sessionId: string;
+      provider: LiveBridgeProvider;
+    }
+  | {
+      type: "session-status";
+      status: Extract<SessionStatus, "connecting" | "active" | "complete" | "error">;
+      message?: string;
+    }
+  | {
+      type: "coach-text";
+      text: string;
+    }
+  | {
+      type: "coach-audio";
+      data: string;
+      mimeType: string;
+    }
+  | {
+      type: "coach-transcript";
+      source: "input" | "output";
+      text: string;
+      finished: boolean;
+    }
+  | {
+      type: "coach-interrupted";
+      message?: string;
+    }
+  | {
+      type: "coach-waiting";
+    }
+  | {
+      type: "usage";
+      promptTokenCount?: number;
+      responseTokenCount?: number;
+      totalTokenCount?: number;
+    }
+  | {
+      type: "error";
+      message: string;
+    };
+
 // POST /api/sessions/finalize
 export interface FinalizeSessionRequest {
   sessionId: string;
