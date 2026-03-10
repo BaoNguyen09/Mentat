@@ -1,0 +1,14 @@
+---
+description: Mentat MVP scope and collaboration guardrails
+alwaysApply: true
+---
+
+# Mentat Collaboration
+
+- Build for the Gemini Live track: real-time table tennis coaching is the primary demo.
+- Keep the MVP focused on one sport: `table-tennis`.
+- Treat memory as the differentiator: scoring, fix list, compressed summary, and next-session accountability.
+- Do not add journaling, extra sports, or a web-research agent unless explicitly requested.
+- Respect ownership boundaries in `AGENTS.md`, especially around `apps/api/src/ws/**` and shared contracts in `packages/types/**`.
+- Prefer one backend in `apps/api` with explicit, synchronous post-session orchestration.
+- Keep prompt design modular: shared coaching core plus a table-tennis-specific module.
