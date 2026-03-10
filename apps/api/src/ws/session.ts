@@ -1,12 +1,14 @@
+import type { Domain, Personality } from "@mentat/types";
+
 export interface LiveSessionBridgeConfig {
   userId: string;
-  sport: "table-tennis";
-  personality: string;
+  domain: Domain;
+  personality: Personality;
 }
 
 export function createLiveSessionBridge(config: LiveSessionBridgeConfig) {
   return {
-    status: "todo",
+    status: "todo" as const,
     config,
   };
 }
