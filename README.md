@@ -15,6 +15,30 @@ Mentat is a table-tennis-first AI sports coach built for the Gemini Live Agent C
 - `apps/web`: React PWA frontend
 - `packages/types`: shared TypeScript contracts
 
+## Contract boundaries
+
+The MVP contract surface lives in `packages/types` and is implemented by the route stubs in `apps/api/src/routes`.
+
+### Live session transport owns
+
+- `POST /api/sessions/start`
+- websocket handoff via `wsUrl`
+- live bridge state such as `connecting`, `active`, `error`, and `complete`
+- real-time transport messages such as input audio/video, coach audio, transcripts, interruption, and bridge provider
+
+### Post-session pipeline owns
+
+- `POST /api/sessions/finalize`
+- `SessionSummary`
+- `FixItem[]`
+- `GET /api/progress/:userId`
+- progress snapshots, recent sessions, and accountability memory reads
+
+### Shared contract rule
+
+The live loop can stream and observe, but it should not rewrite the post-session summary schema.
+The post-session pipeline can summarize and persist outcomes, but it should not change the websocket/live transport shape without updating `packages/types`.
+
 ## Local setup
 
 ### Requirements
