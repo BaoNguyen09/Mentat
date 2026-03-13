@@ -20,6 +20,8 @@ export interface LiveSessionBridgeConfig {
   userId: string;
   domain: Domain;
   personality: Personality;
+  accountability?: string[];
+  recentFixItems?: string[];
 }
 
 interface MockState {
@@ -59,15 +61,35 @@ function buildSystemInstruction(record: SessionRecord) {
     "Treat user interruption as important. Stop the previous thread and coach the new moment.",
   ];
 
+  if (record.recentFixItems && record.recentFixItems.length > 0) {
+    promptLayers.push(
+      `Previous session fix list (test the player on these):\n${record.recentFixItems.map((f, i) => `${i + 1}. ${f}`).join("\n")}`
+    );
+  }
+
+  if (record.accountability && record.accountability.length > 0) {
+    promptLayers.push(
+      `Accountability items from prior sessions (weave into coaching naturally):\n${record.accountability.map((a, i) => `${i + 1}. ${a}`).join("\n")}`
+    );
+  }
+
   return promptLayers.join("\n\n");
 }
 
 function buildKickoffMessage(record: SessionRecord) {
-  return [
+  const parts = [
     "The player is starting a live table tennis coaching session now.",
     "Begin with a short greeting, ask for a neutral ready stance, and give one correction at a time.",
     `Coach personality for this session: ${record.personality}.`,
-  ].join(" ");
+  ];
+
+  if (record.accountability && record.accountability.length > 0) {
+    parts.push(
+      `After greeting, briefly reference one accountability item from their last session: "${record.accountability[0]}". Ask them to demonstrate it.`
+    );
+  }
+
+  return parts.join(" ");
 }
 
 function sendServerMessage(record: SessionRecord, message: LiveServerMessage) {

@@ -40,10 +40,21 @@ export const sessionRoutes = new Hono()
   })
   .post("/start", async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as StartSessionRequest;
+
+    const recentSummaries = await getRecentSessionSummaries(body.userId, 3);
+    const accountability = recentSummaries
+      .flatMap((s) => s.fixList.map((f) => f.drill))
+      .slice(0, 5);
+    const recentFixItems = recentSummaries
+      .flatMap((s) => s.fixList.map((f) => f.item))
+      .slice(0, 5);
+
     const bridge = createLiveSessionBridge({
       userId: body.userId,
       domain: body.domain,
       personality: body.personality,
+      accountability,
+      recentFixItems,
     });
     const response: StartSessionResponse = {
       sessionId: bridge.sessionId,
