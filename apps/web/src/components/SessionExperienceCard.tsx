@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { RotateCcw, Square } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
+import { CheckCircle, Circle, RotateCcw, Square } from "lucide-react";
 
 import type { LiveBridgeProvider, SessionStatus } from "@mentat/types";
 
@@ -29,6 +29,27 @@ const statusCopy: Record<SessionStatus, string> = {
   error: "The live flow hit a problem. Reset and try again.",
 };
 
+interface ReadinessCheck {
+  id: string;
+  label: string;
+  pattern: RegExp;
+}
+
+const READINESS_CHECKS: ReadinessCheck[] = [
+  { id: "framing", label: "Full body in frame", pattern: /step back|tilt|full body|in frame|can see you|see your/i },
+  { id: "racket", label: "Racket visible", pattern: /paddle|racket|see (the|your)|holding/i },
+  { id: "stance", label: "Ready stance confirmed", pattern: /ready.*let.?s go|stance.*(good|great|correct|looks)|good.*ready|let.?s go/i },
+];
+
+function detectReadiness(events: SessionEvent[]) {
+  const coachTexts = events.filter((e) => e.kind === "coach").map((e) => e.label);
+  const allText = coachTexts.join(" ");
+  return READINESS_CHECKS.map((check) => ({
+    ...check,
+    passed: check.pattern.test(allText),
+  }));
+}
+
 export function SessionExperienceCard({
   status,
   sessionId,
@@ -43,6 +64,8 @@ export function SessionExperienceCard({
 }: SessionExperienceCardProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const visibleEvents = [...events].reverse().slice(0, 6);
+  const readinessChecks = useMemo(() => detectReadiness(events), [events]);
+  const allReady = readinessChecks.every((c) => c.passed);
 
   useEffect(() => {
     if (!videoRef.current) {
@@ -106,6 +129,33 @@ export function SessionExperienceCard({
             </div>
           </div>
         </div>
+
+        {status === "active" && !allReady ? (
+          <div className="readiness-gate">
+            <h3 className="readiness-gate__title">Pre-session readiness check</h3>
+            <p className="readiness-gate__desc">
+              Mentat is checking your setup before coaching begins.
+            </p>
+            <ul className="readiness-gate__list">
+              {readinessChecks.map((check) => (
+                <li
+                  className={cx(
+                    "readiness-gate__item",
+                    check.passed && "readiness-gate__item--passed"
+                  )}
+                  key={check.id}
+                >
+                  {check.passed ? (
+                    <CheckCircle size={18} />
+                  ) : (
+                    <Circle size={18} />
+                  )}
+                  {check.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         {error ? <div className="error-banner">{error}</div> : null}
 

@@ -658,3 +658,47 @@ button {
     font-size: 2.35rem;
   }
 }
+
+/* ── Readiness gate ──────────────────────────── */
+
+.readiness-gate {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.readiness-gate__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.readiness-gate__desc {
+  font-size: 0.82rem;
+  color: var(--muted-text);
+  margin: 0 0 0.75rem;
+}
+
+.readiness-gate__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.readiness-gate__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--muted-text);
+  transition: color 0.2s;
+}
+
+.readiness-gate__item--passed {
+  color: var(--success);
+  font-weight: 500;
+}
