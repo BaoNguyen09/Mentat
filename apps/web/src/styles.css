@@ -451,6 +451,11 @@ button {
   color: var(--accent-strong);
 }
 
+.status-chip--readiness {
+  background: rgba(203, 143, 61, 0.16);
+  color: #8b611f;
+}
+
 .status-chip--finalizing {
   background: rgba(203, 143, 61, 0.16);
   color: #8b611f;

@@ -105,6 +105,7 @@ export function App() {
             mediaStream={session.mediaStream}
             onFinalize={session.finalizeCurrentSession}
             onReset={session.resetSession}
+            readinessChecks={session.readinessChecks}
             sessionId={session.sessionId}
             sessionSeconds={session.sessionSeconds}
             status={session.status}

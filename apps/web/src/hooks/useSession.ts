@@ -6,6 +6,7 @@ import type {
   LiveClientMessage,
   LiveServerMessage,
   Personality,
+  ReadinessCheckState,
   SessionContextResponse,
   SessionStatus,
   SessionSummary,
@@ -92,6 +93,26 @@ function makeAnalysisSteps(): AnalysisStep[] {
   ];
 }
 
+function makeInitialReadinessChecks(): ReadinessCheckState[] {
+  return [
+    {
+      id: "framing",
+      label: "Full body in frame",
+      passed: false,
+    },
+    {
+      id: "racket",
+      label: "Racket visible",
+      passed: false,
+    },
+    {
+      id: "stance",
+      label: "Ready stance confirmed",
+      passed: false,
+    },
+  ];
+}
+
 function sleep(milliseconds: number) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
@@ -121,6 +142,9 @@ export function useSession({
   const [events, setEvents] = useState<SessionEvent[]>(makeInitialEvents);
   const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>(
     makeAnalysisSteps,
+  );
+  const [readinessChecks, setReadinessChecks] = useState<ReadinessCheckState[]>(
+    makeInitialReadinessChecks,
   );
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -480,9 +504,8 @@ export function useSession({
         case "session-ready":
           bridgeReadyRef.current = true;
           setBridgeProvider(message.provider);
-          setStatus("active");
           appendEvent(
-            `${message.provider === "gemini" ? "Gemini Live" : "Mock live bridge"} is ready. Start moving and let Mentat watch one correction at a time.`,
+            `${message.provider === "gemini" ? "Gemini Live" : "Mock live bridge"} is ready. Mentat will clear the readiness gate before live coaching starts.`,
             "system",
           );
           sendClientMessage({
@@ -498,6 +521,9 @@ export function useSession({
               message.status === "active" ? "coach" : "system",
             );
           }
+          return;
+        case "readiness-update":
+          setReadinessChecks(message.checks);
           return;
         case "coach-text":
           appendEvent(message.text, "coach");
@@ -545,6 +571,7 @@ export function useSession({
     setSummary(null);
     setBridgeProvider(null);
     setAnalysisSteps(makeAnalysisSteps());
+    setReadinessChecks(makeInitialReadinessChecks());
     setEvents([
       {
         id: makeId("event"),
@@ -749,6 +776,7 @@ export function useSession({
     setSessionSeconds(0);
     setEvents(makeInitialEvents());
     setAnalysisSteps(makeAnalysisSteps());
+    setReadinessChecks(makeInitialReadinessChecks());
   }, [teardownLiveTransport]);
 
   useEffect(() => {
@@ -768,6 +796,7 @@ export function useSession({
     events,
     error,
     analysisSteps,
+    readinessChecks,
     sessionSeconds,
     currentFocus,
     mediaStream,

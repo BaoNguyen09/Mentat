@@ -5,6 +5,7 @@ import type {
   LiveClientMessage,
   LiveServerMessage,
   Personality,
+  ReadinessCheckState,
   SessionStatus,
 } from "@mentat/types";
 import type { ServerType } from "@hono/node-server";
@@ -39,6 +40,8 @@ interface SessionRecord extends LiveSessionBridgeConfig {
   liveSession: GeminiSession | null;
   announcedReady: boolean;
   mockState: MockState;
+  readinessChecks: ReadinessCheckState[];
+  lastCoachText: string | null;
 }
 
 const sessionRecords = new Map<string, SessionRecord>();
@@ -47,6 +50,34 @@ let websocketServer: WebSocketServer | null = null;
 
 function makeSessionId() {
   return `session-${Date.now()}-${Math.round(Math.random() * 1000)}`;
+}
+
+function makeReadinessChecks(): ReadinessCheckState[] {
+  return [
+    {
+      id: "framing",
+      label: "Full body in frame",
+      passed: false,
+    },
+    {
+      id: "racket",
+      label: "Racket visible",
+      passed: false,
+    },
+    {
+      id: "stance",
+      label: "Ready stance confirmed",
+      passed: false,
+    },
+  ];
+}
+
+function emitReadinessUpdate(record: SessionRecord) {
+  sendServerMessage(record, {
+    type: "readiness-update",
+    checks: record.readinessChecks,
+    ready: record.readinessChecks.every((check) => check.passed),
+  });
 }
 
 function buildSystemInstruction(record: SessionRecord) {
@@ -77,7 +108,14 @@ function sendServerMessage(record: SessionRecord, message: LiveServerMessage) {
   record.clientSocket.send(JSON.stringify(message));
 }
 
-function setStatus(record: SessionRecord, status: Extract<SessionStatus, "connecting" | "active" | "complete" | "error">, message?: string) {
+function setStatus(
+  record: SessionRecord,
+  status: Extract<
+    SessionStatus,
+    "connecting" | "readiness" | "active" | "complete" | "error"
+  >,
+  message?: string,
+) {
   record.status = status;
   sendServerMessage(record, {
     type: "session-status",
@@ -119,6 +157,112 @@ function normalizeText(value: string | undefined) {
   return value?.trim() ?? "";
 }
 
+function markReadinessCheck(
+  record: SessionRecord,
+  checkId: ReadinessCheckState["id"],
+  detail?: string,
+) {
+  const check = record.readinessChecks.find((entry) => entry.id === checkId);
+
+  if (!check) {
+    return false;
+  }
+
+  const nextDetail = detail?.trim();
+  const changed = !check.passed || check.detail !== nextDetail;
+  check.passed = true;
+  check.detail = nextDetail;
+  return changed;
+}
+
+function updateReadinessFromCoachText(record: SessionRecord, text: string) {
+  const normalized = text.toLowerCase();
+  let changed = false;
+
+  if (
+    /ready\.?\s*let'?s go/.test(normalized) ||
+    /framing looks good/.test(normalized)
+  ) {
+    changed = markReadinessCheck(record, "framing") || changed;
+  }
+
+  if (
+    /can see your full body/.test(normalized) ||
+    /can see your whole body/.test(normalized) ||
+    /head to feet.*visible/.test(normalized) ||
+    /feet (are )?in frame/.test(normalized) ||
+    /full body is visible/.test(normalized)
+  ) {
+    changed = markReadinessCheck(record, "framing") || changed;
+  }
+
+  if (
+    /racket/.test(normalized) ||
+    /paddle/.test(normalized)
+  ) {
+    let detail: string | undefined;
+
+    if (/right (hand|side)/.test(normalized)) {
+      detail = "Right side";
+    } else if (/left (hand|side)/.test(normalized)) {
+      detail = "Left side";
+    }
+
+    if (
+      /can see.*(racket|paddle)/.test(normalized) ||
+      /(racket|paddle) is visible/.test(normalized) ||
+      /got the racket/.test(normalized) ||
+      /got the paddle/.test(normalized) ||
+      /ready\.?\s*let'?s go/.test(normalized)
+    ) {
+      changed = markReadinessCheck(record, "racket", detail) || changed;
+    }
+  }
+
+  if (
+    /ready stance looks good/.test(normalized) ||
+    /neutral ready position looks good/.test(normalized) ||
+    /stance looks good/.test(normalized) ||
+    /knees are soft/.test(normalized) ||
+    /weight is forward/.test(normalized) ||
+    /paddle is centered/.test(normalized) ||
+    /ready\.?\s*let'?s go/.test(normalized)
+  ) {
+    changed = markReadinessCheck(record, "stance") || changed;
+  }
+
+  if (!changed) {
+    return;
+  }
+
+  emitReadinessUpdate(record);
+
+  if (
+    record.status === "readiness" &&
+    record.readinessChecks.every((check) => check.passed)
+  ) {
+    setStatus(record, "active", "Readiness confirmed. Start the first rally.");
+  }
+}
+
+function emitCoachText(record: SessionRecord, text: string) {
+  const normalized = normalizeText(text);
+
+  if (!normalized || normalized === record.lastCoachText) {
+    return;
+  }
+
+  record.lastCoachText = normalized;
+  sendServerMessage(record, {
+    type: "coach-text",
+    text: normalized,
+  });
+
+  if (record.status === "readiness" || record.status === "connecting") {
+    updateReadinessFromCoachText(record, normalized);
+  }
+}
+
 function emitMockCoaching(record: SessionRecord) {
   if (record.provider !== "mock") {
     return;
@@ -128,28 +272,47 @@ function emitMockCoaching(record: SessionRecord) {
 
   if (coachingMessagesSent === 0 && videoFrames >= 1) {
     record.mockState.coachingMessagesSent += 1;
-    sendServerMessage(record, {
-      type: "coach-text",
-      text: "I can see you now. Step back half a pace so your feet stay in frame, then hold a neutral ready stance.",
-    });
+    emitCoachText(
+      record,
+      "Step back half a pace so I can see your full body from head to feet.",
+    );
     return;
   }
 
-  if (coachingMessagesSent === 1 && audioChunks >= 6) {
+  if (coachingMessagesSent === 1 && videoFrames >= 2) {
     record.mockState.coachingMessagesSent += 1;
-    sendServerMessage(record, {
-      type: "coach-text",
-      text: "Your voice feed is live. Keep your knees softer and recover to center faster after contact.",
-    });
+    emitCoachText(
+      record,
+      "Good. I can see your full body. Keep the racket visible in your right hand.",
+    );
     return;
   }
 
-  if (coachingMessagesSent === 2 && (videoFrames >= 3 || textTurns >= 1)) {
+  if (coachingMessagesSent === 2 && videoFrames >= 3) {
     record.mockState.coachingMessagesSent += 1;
-    sendServerMessage(record, {
-      type: "coach-text",
-      text: "One fix only for the next rally: close the paddle face slightly on forehand contact and do not chase power yet.",
-    });
+    emitCoachText(
+      record,
+      "Good. I can see the racket on your right side. Now hold a neutral ready stance with soft knees and the paddle centered.",
+    );
+    return;
+  }
+
+  if (coachingMessagesSent === 3 && (videoFrames >= 4 || audioChunks >= 6)) {
+    record.mockState.coachingMessagesSent += 1;
+    emitCoachText(record, "Ready. Let's go.");
+    return;
+  }
+
+  if (
+    record.status === "active" &&
+    coachingMessagesSent === 4 &&
+    (videoFrames >= 5 || textTurns >= 1 || audioChunks >= 8)
+  ) {
+    record.mockState.coachingMessagesSent += 1;
+    emitCoachText(
+      record,
+      "One fix only for the next rally: close the paddle face slightly on forehand contact and do not chase power yet.",
+    );
   }
 }
 
@@ -165,10 +328,7 @@ function handleMockMessage(record: SessionRecord, message: LiveClientMessage) {
       break;
     case "text": {
       record.mockState.textTurns += 1;
-      sendServerMessage(record, {
-        type: "coach-text",
-        text: `Heard. We will anchor on this: ${message.text}`,
-      });
+      emitCoachText(record, `Heard. We will anchor on this: ${message.text}`);
       emitMockCoaching(record);
       break;
     }
@@ -190,7 +350,12 @@ function relayGeminiMessage(record: SessionRecord, message: GeminiLiveServerMess
       sessionId: record.sessionId,
       provider: "gemini",
     });
-    setStatus(record, "active", "Gemini Live is ready.");
+    emitReadinessUpdate(record);
+    setStatus(
+      record,
+      "readiness",
+      "Gemini Live is ready. Mentat is checking framing, racket visibility, and stance.",
+    );
   }
 
   if (message.serverContent?.inputTranscription?.text) {
@@ -213,10 +378,7 @@ function relayGeminiMessage(record: SessionRecord, message: GeminiLiveServerMess
     });
 
     if (transcriptText && message.serverContent.outputTranscription.finished) {
-      sendServerMessage(record, {
-        type: "coach-text",
-        text: transcriptText,
-      });
+      emitCoachText(record, transcriptText);
     }
   }
 
@@ -233,10 +395,7 @@ function relayGeminiMessage(record: SessionRecord, message: GeminiLiveServerMess
       const text = normalizeText(part.text);
 
       if (text) {
-        sendServerMessage(record, {
-          type: "coach-text",
-          text,
-        });
+        emitCoachText(record, text);
       }
     }
   }
@@ -337,11 +496,16 @@ async function initializeLiveSession(record: SessionRecord) {
       sessionId: record.sessionId,
       provider: "mock",
     });
-    setStatus(record, "active", "Mock live bridge is active because Gemini credentials are not configured.");
-    sendServerMessage(record, {
-      type: "coach-text",
-      text: "Mock live bridge is running. Camera and microphone traffic are still flowing through the same session pipeline.",
-    });
+    emitReadinessUpdate(record);
+    setStatus(
+      record,
+      "readiness",
+      "Mock live bridge is ready. Mentat is checking framing, racket visibility, and stance.",
+    );
+    emitCoachText(
+      record,
+      "Mock live bridge is running. Show your full body, racket, and ready stance before we coach the first rally.",
+    );
     return;
   }
 
@@ -444,6 +608,8 @@ async function handleSocketConnection(record: SessionRecord, socket: WebSocket) 
   record.liveSession = null;
   record.announcedReady = false;
   record.status = "connecting";
+  record.readinessChecks = makeReadinessChecks();
+  record.lastCoachText = null;
 
   socket.on("message", (raw) => {
     const message = parseMessage(raw);
@@ -497,6 +663,8 @@ export function createLiveSessionBridge(config: LiveSessionBridgeConfig) {
       textTurns: 0,
       coachingMessagesSent: 0,
     },
+    readinessChecks: makeReadinessChecks(),
+    lastCoachText: null,
   };
 
   sessionRecords.set(sessionId, record);

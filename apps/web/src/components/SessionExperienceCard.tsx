@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { CheckCircle, Circle, RotateCcw, Square } from "lucide-react";
 
-import type { LiveBridgeProvider, SessionStatus } from "@mentat/types";
+import type {
+  LiveBridgeProvider,
+  ReadinessCheckState,
+  SessionStatus,
+} from "@mentat/types";
 
 import type { SessionEvent } from "../hooks/useSession";
 import { cx, formatDuration, formatSessionDate } from "../lib/utils";
@@ -12,6 +16,7 @@ interface SessionExperienceCardProps {
   sessionId: string | null;
   wsUrl: string | null;
   bridgeProvider: LiveBridgeProvider | null;
+  readinessChecks: ReadinessCheckState[];
   mediaStream: MediaStream | null;
   sessionSeconds: number;
   events: SessionEvent[];
@@ -23,38 +28,21 @@ interface SessionExperienceCardProps {
 const statusCopy: Record<SessionStatus, string> = {
   idle: "Waiting for you to start the next coaching run.",
   connecting: "Mentat is preparing the live coaching bridge.",
-  active: "Live coaching is running. Keep the camera stable and focus on one correction.",
+  readiness:
+    "Mentat is checking framing, racket visibility, and stance before coaching starts.",
+  active:
+    "Live coaching is running. Keep the camera stable and focus on one correction.",
   finalizing: "Mentat is turning the session into a memory, score, and fix list.",
   complete: "Post-session review is complete and ready for the next drill block.",
   error: "The live flow hit a problem. Reset and try again.",
 };
-
-interface ReadinessCheck {
-  id: string;
-  label: string;
-  pattern: RegExp;
-}
-
-const READINESS_CHECKS: ReadinessCheck[] = [
-  { id: "framing", label: "Full body in frame", pattern: /step back|tilt|full body|in frame|can see you|see your/i },
-  { id: "racket", label: "Racket visible", pattern: /paddle|racket|see (the|your)|holding/i },
-  { id: "stance", label: "Ready stance confirmed", pattern: /ready.*let.?s go|stance.*(good|great|correct|looks)|good.*ready|let.?s go/i },
-];
-
-function detectReadiness(events: SessionEvent[]) {
-  const coachTexts = events.filter((e) => e.kind === "coach").map((e) => e.label);
-  const allText = coachTexts.join(" ");
-  return READINESS_CHECKS.map((check) => ({
-    ...check,
-    passed: check.pattern.test(allText),
-  }));
-}
 
 export function SessionExperienceCard({
   status,
   sessionId,
   wsUrl,
   bridgeProvider,
+  readinessChecks,
   mediaStream,
   sessionSeconds,
   events,
@@ -64,8 +52,7 @@ export function SessionExperienceCard({
 }: SessionExperienceCardProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const visibleEvents = [...events].reverse().slice(0, 6);
-  const readinessChecks = useMemo(() => detectReadiness(events), [events]);
-  const allReady = readinessChecks.every((c) => c.passed);
+  const allReady = readinessChecks.every((check) => check.passed);
 
   useEffect(() => {
     if (!videoRef.current) {
@@ -130,7 +117,7 @@ export function SessionExperienceCard({
           </div>
         </div>
 
-        {status === "active" && !allReady ? (
+        {status === "readiness" ? (
           <div className="readiness-gate">
             <h3 className="readiness-gate__title">Pre-session readiness check</h3>
             <p className="readiness-gate__desc">
@@ -141,19 +128,23 @@ export function SessionExperienceCard({
                 <li
                   className={cx(
                     "readiness-gate__item",
-                    check.passed && "readiness-gate__item--passed"
+                    check.passed && "readiness-gate__item--passed",
                   )}
                   key={check.id}
                 >
-                  {check.passed ? (
-                    <CheckCircle size={18} />
-                  ) : (
-                    <Circle size={18} />
-                  )}
-                  {check.label}
+                  {check.passed ? <CheckCircle size={18} /> : <Circle size={18} />}
+                  <span>
+                    {check.label}
+                    {check.detail ? ` - ${check.detail}` : ""}
+                  </span>
                 </li>
               ))}
             </ul>
+            {allReady ? (
+              <p className="readiness-gate__desc">
+                Readiness passed. Mentat is switching into live technical coaching.
+              </p>
+            ) : null}
           </div>
         ) : null}
 
@@ -173,7 +164,11 @@ export function SessionExperienceCard({
           </button>
           <button
             className="ghost-button"
-            disabled={status === "connecting" || status === "finalizing"}
+            disabled={
+              status === "connecting" ||
+              status === "readiness" ||
+              status === "finalizing"
+            }
             onClick={onReset}
             type="button"
           >
@@ -191,7 +186,10 @@ export function SessionExperienceCard({
             {visibleEvents.map((event) => (
               <article className="timeline-item" key={event.id}>
                 <div
-                  className={cx("timeline-item__dot", `timeline-item__dot--${event.kind}`)}
+                  className={cx(
+                    "timeline-item__dot",
+                    `timeline-item__dot--${event.kind}`,
+                  )}
                 />
                 <div>
                   <p className="timeline-item__label">{event.label}</p>

@@ -18,6 +18,7 @@ export type Personality = "sensei" | "hype" | "drill_sergeant";
 export type SessionStatus =
   | "idle"
   | "connecting"
+  | "readiness"
   | "active"
   | "finalizing"
   | "complete"
@@ -106,6 +107,13 @@ export interface StartSessionResponse {
 
 export type LiveBridgeProvider = "gemini" | "mock";
 
+export interface ReadinessCheckState {
+  id: "framing" | "racket" | "stance";
+  label: string;
+  passed: boolean;
+  detail?: string;
+}
+
 export type LiveClientMessage =
   | {
       type: "text";
@@ -142,8 +150,16 @@ export type LiveServerMessage =
     }
   | {
       type: "session-status";
-      status: Extract<SessionStatus, "connecting" | "active" | "complete" | "error">;
+      status: Extract<
+        SessionStatus,
+        "connecting" | "readiness" | "active" | "complete" | "error"
+      >;
       message?: string;
+    }
+  | {
+      type: "readiness-update";
+      checks: ReadinessCheckState[];
+      ready: boolean;
     }
   | {
       type: "coach-text";
