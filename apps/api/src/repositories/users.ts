@@ -1,9 +1,9 @@
 import type { Domain, Profile, ProgressSnapshot, SessionSummary } from "@mentat/types";
 
-import { getFirestoreClient, isFirestoreConfigured } from "../lib/firestore";
-import { validateProgressSnapshot } from "../lib/validators";
-import { readLocalStore, updateLocalStore } from "./local-store";
-import { getAllSessionSummaries } from "./sessions";
+import { getFirestoreClient, isFirestoreConfigured } from "../lib/firestore.js";
+import { validateProgressSnapshot } from "../lib/validators.js";
+import { readLocalStore, updateLocalStore } from "./local-store.js";
+import { getAllSessionSummaries } from "./sessions.js";
 
 const PROFILES_COLLECTION = "profiles";
 const PROGRESS_COLLECTION = "progress";

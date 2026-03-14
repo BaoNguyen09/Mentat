@@ -1,10 +1,10 @@
 import type { Domain, FinalizeSessionResponse, Personality } from "@mentat/types";
 
-import { validateSessionSummary } from "../lib/validators";
-import { saveSessionRecord } from "../repositories/sessions";
-import { updateUserProgress } from "../repositories/users";
-import { generateFixList } from "./plan";
-import { generateSessionSummary } from "./summary";
+import { validateSessionSummary } from "../lib/validators.js";
+import { saveSessionRecord } from "../repositories/sessions.js";
+import { updateUserProgress } from "../repositories/users.js";
+import { generateFixList } from "./plan.js";
+import { generateSessionSummary } from "./summary.js";
 
 export interface FinalizeSessionInput {
   sessionId: string;

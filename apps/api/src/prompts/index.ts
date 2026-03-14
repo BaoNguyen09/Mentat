@@ -1,8 +1,8 @@
 import type { Domain, DomainPromptModule, Personality } from "@mentat/types";
 
-import { mentatIdentityPrompt } from "./identity";
-import { coachPersonalities } from "./personality";
-import { tableTennisPromptModule } from "./sports/table-tennis";
+import { mentatIdentityPrompt } from "./identity.js";
+import { coachPersonalities } from "./personality.js";
+import { tableTennisPromptModule } from "./sports/table-tennis.js";
 
 const domainPromptModules: Partial<Record<Domain, DomainPromptModule>> = {
   "table-tennis": tableTennisPromptModule,

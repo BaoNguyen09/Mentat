@@ -1,5 +1,5 @@
 import type { FixItem, SessionSummary } from "@mentat/types";
-import { getGeminiClient } from "../lib/gemini";
+import { getGeminiClient } from "../lib/gemini.js";
 
 const FIX_MODEL = "gemini-2.0-flash";
 

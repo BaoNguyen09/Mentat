@@ -1,6 +1,6 @@
 import type { Domain, Personality, Score, SessionSummary } from "@mentat/types";
 
-import { getGeminiClient } from "../lib/gemini";
+import { getGeminiClient } from "../lib/gemini.js";
 
 const SUMMARY_MODEL = "gemini-2.0-flash";
 

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { ProgressResponse } from "@mentat/types";
-import { getRecentSessionSummaries } from "../repositories/sessions";
-import { getProgressSnapshot } from "../repositories/users";
+import { getRecentSessionSummaries } from "../repositories/sessions.js";
+import { getProgressSnapshot } from "../repositories/users.js";
 
 export const progressRoutes = new Hono().get("/:userId", async (c) => {
   const userId = c.req.param("userId");

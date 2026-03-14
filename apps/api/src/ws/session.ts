@@ -12,8 +12,8 @@ import type { ServerType } from "@hono/node-server";
 import type { IncomingMessage } from "node:http";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
 
-import { getGeminiClient, getLiveModel, shouldUseMockLiveBridge } from "../lib/gemini";
-import { assembleKickoffMessage, assembleSystemInstruction } from "../prompts";
+import { getGeminiClient, getLiveModel, shouldUseMockLiveBridge } from "../lib/gemini.js";
+import { assembleKickoffMessage, assembleSystemInstruction } from "../prompts/index.js";
 
 export interface LiveSessionBridgeConfig {
   userId: string;

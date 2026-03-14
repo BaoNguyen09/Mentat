@@ -6,10 +6,10 @@ import type {
   SessionContextResponse,
 } from "@mentat/types";
 
-import { createLiveSessionBridge, releaseLiveSession } from "../ws/session";
-import { finalizeSession } from "../services/session";
-import { getRecentSessionSummaries } from "../repositories/sessions";
-import { getUserProfile } from "../repositories/users";
+import { createLiveSessionBridge, releaseLiveSession } from "../ws/session.js";
+import { finalizeSession } from "../services/session.js";
+import { getRecentSessionSummaries } from "../repositories/sessions.js";
+import { getUserProfile } from "../repositories/users.js";
 
 export const sessionRoutes = new Hono()
   .get("/context/:userId", async (c) => {

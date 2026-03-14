@@ -1,8 +1,8 @@
 import type { SessionSummary } from "@mentat/types";
 
-import { getFirestoreClient, isFirestoreConfigured } from "../lib/firestore";
-import { validateSessionSummary } from "../lib/validators";
-import { readLocalStore, updateLocalStore } from "./local-store";
+import { getFirestoreClient, isFirestoreConfigured } from "../lib/firestore.js";
+import { validateSessionSummary } from "../lib/validators.js";
+import { readLocalStore, updateLocalStore } from "./local-store.js";
 
 const COLLECTION = "sessions";
 

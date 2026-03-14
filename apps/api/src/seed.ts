@@ -1,8 +1,8 @@
 import type { Profile, SessionSummary } from "@mentat/types";
 
-import { loadEnvironment } from "./lib/env";
-import { saveSessionRecord } from "./repositories/sessions";
-import { saveUserProfile } from "./repositories/users";
+import { loadEnvironment } from "./lib/env.js";
+import { saveSessionRecord } from "./repositories/sessions.js";
+import { saveUserProfile } from "./repositories/users.js";
 
 loadEnvironment();
 

@@ -45,6 +45,10 @@ Mentat is a real-time multimodal life coach built for the Gemini Live Agent Chal
 └─────────────────────────────────────────────────┘
 ```
 
+Additional docs:
+- [Architecture](./docs/architecture.md)
+- [Demo checklist](./docs/demo-checklist.md)
+
 ## MVP Features
 
 - **Live coaching**: Real-time video + audio coaching via Gemini Live API
@@ -121,6 +125,8 @@ cd apps/web && npm run dev -- --host 0.0.0.0 --port 5173
 
 Open `http://127.0.0.1:5173` on desktop or your phone (same network).
 
+In production, the API also serves the built PWA from the same Cloud Run service. Local Vite is only for development speed.
+
 ### Typecheck
 
 ```bash
@@ -157,7 +163,10 @@ npm run typecheck
 ## Deployment (Cloud Run)
 
 ```bash
-# Build
+# Build the workspace first
+npm run build
+
+# Build the image
 docker build -t mentat .
 
 # Tag and push
@@ -172,6 +181,13 @@ gcloud run deploy mentat \
   --allow-unauthenticated \
   --region us-central1
 ```
+
+After deploy:
+- the PWA is served from `/`
+- health is served from `/api/health`
+- REST routes live under `/api/*`
+- the live coaching bridge upgrades on `/ws/session`
+- the container starts the API from source through `tsx`, while the workspace build still runs during image creation as a deployment check
 
 ## Notes
 
