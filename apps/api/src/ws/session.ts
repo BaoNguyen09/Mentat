@@ -12,9 +12,7 @@ import type { IncomingMessage } from "node:http";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
 
 import { getGeminiClient, getLiveModel, shouldUseMockLiveBridge } from "../lib/gemini";
-import { mentatIdentityPrompt } from "../prompts/identity";
-import { coachPersonalities } from "../prompts/personality";
-import { tableTennisPrompt } from "../prompts/sports/table-tennis";
+import { assembleKickoffMessage, assembleSystemInstruction } from "../prompts";
 
 export interface LiveSessionBridgeConfig {
   userId: string;
@@ -51,56 +49,21 @@ function makeSessionId() {
 }
 
 function buildSystemInstruction(record: SessionRecord) {
-  const promptLayers = [
-    mentatIdentityPrompt,
-    `Coach personality: ${coachPersonalities[record.personality]}`,
-    tableTennisPrompt,
-    "Coach in live voice. Keep spoken responses short, specific, and corrective.",
-    "Prioritize what is visible right now over historical assumptions.",
-    "If the frame is bad, ask the player to reposition the phone before giving technical advice.",
-    "Treat user interruption as important. Stop the previous thread and coach the new moment.",
-    `Pre-session readiness protocol (MANDATORY before any technique coaching):
-1. FRAMING CHECK: Confirm the player's full body is visible in the camera frame, from head to feet. If cropped, say exactly what to adjust: "Step back" or "Tilt the phone down."
-2. RACKET CHECK: Confirm a racket/paddle is visible. Note which hand holds it. If not visible, ask: "Show me your paddle."
-3. STANCE CHECK: Ask the player to hold a neutral ready position. Confirm their knees are soft, weight is forward, and paddle is centered at chest height.
-Only after all three checks pass should you say "Ready. Let's go." and begin normal coaching.
-If any check fails, give one short corrective instruction and re-check. Do not move to technique coaching until readiness is confirmed.`,
-  ];
-
-  if (record.recentFixItems && record.recentFixItems.length > 0) {
-    promptLayers.push(
-      `Previous session fix list (test the player on these):\n${record.recentFixItems.map((f, i) => `${i + 1}. ${f}`).join("\n")}`
-    );
-  }
-
-  if (record.accountability && record.accountability.length > 0) {
-    promptLayers.push(
-      `Accountability items from prior sessions (weave into coaching naturally):\n${record.accountability.map((a, i) => `${i + 1}. ${a}`).join("\n")}`
-    );
-  }
-
-  return promptLayers.join("\n\n");
+  return assembleSystemInstruction({
+    domain: record.domain,
+    personality: record.personality,
+    accountability: record.accountability,
+    recentFixItems: record.recentFixItems,
+  });
 }
 
 function buildKickoffMessage(record: SessionRecord) {
-  const parts = [
-    "The player is starting a live table tennis coaching session now.",
-    "DO NOT begin technique coaching yet. First, run the pre-session readiness protocol:",
-    "1. Greet the player briefly.",
-    "2. Check framing: is their full body visible? If not, instruct them to adjust.",
-    "3. Check racket: is a paddle visible? If not, ask them to show it.",
-    "4. Check stance: ask for a neutral ready position and confirm it looks correct.",
-    "5. Only after confirming all three, say 'Ready. Let's go.' and begin coaching.",
-    `Coach personality for this session: ${record.personality}.`,
-  ];
-
-  if (record.accountability && record.accountability.length > 0) {
-    parts.push(
-      `After readiness is confirmed, reference this accountability item from their last session: "${record.accountability[0]}".`
-    );
-  }
-
-  return parts.join(" ");
+  return assembleKickoffMessage({
+    domain: record.domain,
+    personality: record.personality,
+    accountability: record.accountability,
+    recentFixItems: record.recentFixItems,
+  });
 }
 
 function sendServerMessage(record: SessionRecord, message: LiveServerMessage) {
