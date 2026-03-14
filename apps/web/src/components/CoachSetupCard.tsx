@@ -6,13 +6,11 @@ import { cx } from "../lib/utils";
 import { SurfaceCard } from "./SurfaceCard";
 
 interface CoachSetupCardProps {
-  userId: string;
   personality: Personality;
   context: SessionContextResponse | null;
   currentFocus: string;
   isBusy: boolean;
   contextLoading: boolean;
-  onUserIdChange: (value: string) => void;
   onPersonalityChange: (value: Personality) => void;
   onRefreshContext: () => Promise<unknown>;
   onBeginSession: () => Promise<unknown>;
@@ -31,13 +29,11 @@ const personalityCopy: Record<Personality, string> = {
 };
 
 export function CoachSetupCard({
-  userId,
   personality,
   context,
   currentFocus,
   isBusy,
   contextLoading,
-  onUserIdChange,
   onPersonalityChange,
   onRefreshContext,
   onBeginSession,
@@ -62,17 +58,6 @@ export function CoachSetupCard({
       }
     >
       <div className="stack-md">
-        <label className="field">
-          <span className="field__label">User id</span>
-          <input
-            className="text-input"
-            disabled={isBusy}
-            onChange={(event) => onUserIdChange(event.target.value)}
-            placeholder="your-user-id"
-            value={userId}
-          />
-        </label>
-
         <div className="stack-sm">
           <span className="field__label">Coaching mode</span>
           <div className="pill-row">
@@ -128,7 +113,7 @@ export function CoachSetupCard({
           </div>
           <div className="mini-panel">
             <span className="mini-panel__label">Profile</span>
-            <strong>{context?.profile.name ?? "Alex"}</strong>
+            <strong>{context?.profile.name ?? "You"}</strong>
           </div>
           <div className="mini-panel">
             <span className="mini-panel__label">Streak</span>
@@ -138,7 +123,7 @@ export function CoachSetupCard({
 
         <button
           className="primary-button"
-          disabled={isBusy || !userId.trim()}
+          disabled={isBusy}
           onClick={() => {
             void onBeginSession();
           }}

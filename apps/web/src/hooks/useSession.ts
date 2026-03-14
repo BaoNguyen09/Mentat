@@ -561,7 +561,7 @@ export function useSession({
 
   const beginSession = useCallback(async () => {
     if (!userId.trim()) {
-      setError("Enter a user id before starting a session.");
+      setError("Mentat could not resolve the local profile for this device.");
       return;
     }
 

@@ -10,7 +10,7 @@ const PROGRESS_COLLECTION = "progress";
 
 const defaultProfile = (userId: string): Profile => ({
   userId,
-  name: "Alex",
+  name: "You",
   domains: ["table-tennis"],
   streak: 0,
   createdAt: new Date().toISOString(),

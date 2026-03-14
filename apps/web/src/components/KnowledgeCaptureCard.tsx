@@ -8,7 +8,6 @@ import { formatSessionDate } from "../lib/utils";
 import { SurfaceCard } from "./SurfaceCard";
 
 interface KnowledgeCaptureCardProps {
-  userId: string;
   entries: DomainKnowledgeEntry[];
   isLoading: boolean;
   error: string | null;
@@ -25,7 +24,6 @@ interface KnowledgeCaptureCardProps {
 const suggestedDomains = ["Sports", "Work", "Learning", "Home", "Health"];
 
 export function KnowledgeCaptureCard({
-  userId,
   entries,
   isLoading,
   error,
@@ -41,12 +39,11 @@ export function KnowledgeCaptureCard({
 
   const saveDisabled = useMemo(
     () =>
-      !userId.trim() ||
       !domainGroup.trim() ||
       !subdomain.trim() ||
       !voice.transcript.trim() ||
       isSaving,
-    [domainGroup, isSaving, subdomain, userId, voice.transcript],
+    [domainGroup, isSaving, subdomain, voice.transcript],
   );
 
   return (
@@ -57,7 +54,7 @@ export function KnowledgeCaptureCard({
       action={
         <button
           className="ghost-button"
-          disabled={!userId.trim() || isSyncing}
+          disabled={isSyncing}
           onClick={() => {
             setIsSyncing(true);
             void onSync()

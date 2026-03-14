@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { BrainCircuit, Sparkles, Trophy } from "lucide-react";
 
 import type { Personality } from "@mentat/types";
@@ -13,19 +13,10 @@ import { SessionExperienceCard } from "./components/SessionExperienceCard";
 import { useKnowledge } from "./hooks/useKnowledge";
 import { useProgress } from "./hooks/useProgress";
 import { useSession } from "./hooks/useSession";
-
-const userIdStorageKey = "mentat-user-id";
-
-function getInitialUserId() {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  return window.localStorage.getItem(userIdStorageKey) ?? "";
-}
+import { LOCAL_USER_ID } from "./lib/local-profile";
 
 export function App() {
-  const [userId, setUserId] = useState(getInitialUserId);
+  const [userId] = useState(LOCAL_USER_ID);
   const [personality, setPersonality] = useState<Personality>("sensei");
 
   const progress = useProgress(userId);
@@ -36,10 +27,6 @@ export function App() {
     personality,
     onFinalized: progress.refresh,
   });
-
-  useEffect(() => {
-    window.localStorage.setItem(userIdStorageKey, userId);
-  }, [userId]);
 
   const progressSnapshot = progress.data?.snapshot;
   const fixList = session.summary?.fixList ?? [];
@@ -96,9 +83,7 @@ export function App() {
             onBeginSession={session.beginSession}
             onPersonalityChange={setPersonality}
             onRefreshContext={session.refreshContext}
-            onUserIdChange={setUserId}
             personality={personality}
-            userId={userId}
           />
 
           <KnowledgeCaptureCard
@@ -113,7 +98,6 @@ export function App() {
               await knowledge.sync();
             }}
             syncMessage={knowledge.syncMessage}
-            userId={userId}
           />
 
           <SessionExperienceCard

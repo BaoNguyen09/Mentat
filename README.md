@@ -1,196 +1,113 @@
 # Mentat
 
-Mentat is a real-time multimodal life coach built for the Gemini Live Agent Challenge. It uses phone camera + microphone to coach table tennis technique through live video analysis, then remembers your progress across sessions.
+Mentat is a real-time multimodal coaching app built for the Gemini Live Agent Challenge. The current repo is a table-tennis-first MVP with a live session shell, readiness gate, post-session memory, and voice-tracked domain knowledge that syncs into Obsidian.
 
-## Architecture
+## What it does right now
 
-```
-┌─────────────────────────────────────────────────┐
-│                  Phone Browser (PWA)            │
-│  ┌──────────┐  ┌──────────┐  ┌───────────────┐ │
-│  │ Camera   │  │ Audio    │  │ Coach UI      │ │
-│  │ (1fps)   │  │ (16kHz)  │  │ + Readiness   │ │
-│  └────┬─────┘  └────┬─────┘  └───────┬───────┘ │
-│       └──────┬───────┘                │         │
-│              ▼                        ▲         │
-│       WebSocket (/ws/session)         │         │
-└──────────────┼────────────────────────┼─────────┘
-               │                        │
-┌──────────────▼────────────────────────┼─────────┐
-│              Hono API (port 8000)               │
-│  ┌───────────────────┐  ┌──────────────────┐    │
-│  │ Live Session      │  │ REST Routes      │    │
-│  │ Bridge (WS)       │  │ /api/sessions/*  │    │
-│  │                   │  │ /api/progress/*  │    │
-│  │ ┌───────────────┐ │  └───────┬──────────┘    │
-│  │ │ Gemini Live   │ │          │               │
-│  │ │ (audio+video) │ │          ▼               │
-│  │ └───────────────┘ │  ┌──────────────────┐    │
-│  └───────────────────┘  │ Post-Session     │    │
-│                         │ Pipeline         │    │
-│  ┌───────────────────┐  │ ┌──────────────┐ │    │
-│  │ Prompt Layers     │  │ │ Gemini Flash │ │    │
-│  │ identity.ts       │  │ │ (summary +   │ │    │
-│  │ personality.ts    │  │ │  fix list)   │ │    │
-│  │ table-tennis.ts   │  │ └──────────────┘ │    │
-│  │ + accountability  │  └───────┬──────────┘    │
-│  └───────────────────┘          │               │
-│                                 ▼               │
-│                         ┌──────────────────┐    │
-│                         │ Firestore        │    │
-│                         │ (sessions,       │    │
-│                         │  profiles,       │    │
-│                         │  progress)       │    │
-│                         └──────────────────┘    │
-└─────────────────────────────────────────────────┘
-```
-
-Additional docs:
-- [Architecture](./docs/architecture.md)
-- [Demo checklist](./docs/demo-checklist.md)
-
-## MVP Features
-
-- **Live coaching**: Real-time video + audio coaching via Gemini Live API
-- **Pre-session readiness**: Framing, racket, and stance checks before coaching starts
-- **Post-session memory**: AI-generated summary, scores, and fix list after each session
-- **Cross-session accountability**: Prior fix list loaded into next session's coaching context
-- **Progress dashboard**: Streak, session count, and recent session history
+- Starts a live camera + microphone coaching session from the browser
+- Uses Gemini Live when `GEMINI_API_KEY` is set, otherwise falls back to a mock bridge
+- Runs a readiness gate before coaching starts
+- Finalizes sessions into summaries, fix lists, and progress updates
+- Captures domain knowledge by voice or text
+- Syncs saved knowledge into your Obsidian vault as markdown pages
 
 ## Workspace
 
 | Package | Description |
-|---------|-------------|
-| `apps/api` | Hono backend, Gemini Live bridge, post-session pipeline |
-| `apps/web` | React PWA frontend (mobile-first) |
+| --- | --- |
+| `apps/api` | Hono backend, live bridge, knowledge routes, Obsidian sync |
+| `apps/web` | React frontend |
 | `packages/types` | Shared TypeScript contracts |
 
-## Local Setup
-
-### Requirements
+## Requirements
 
 - Node.js 22+
 - npm 11+
-- A Gemini API key (optional — falls back to mock bridge)
+- Optional Gemini API key
 
-### Install
+## Install
 
 ```bash
 npm install
 ```
 
-### Environment
+## Environment
 
-```bash
-cp apps/api/.env.example apps/api/.env
-```
-
-Set at least:
+Create `apps/api/.env` from `apps/api/.env.example`:
 
 ```env
-GEMINI_API_KEY=your_key_here
+GEMINI_API_KEY=
+GOOGLE_CLOUD_PROJECT=
+FIRESTORE_EMULATOR_HOST=
 PORT=8000
 ```
 
-If `GEMINI_API_KEY` is empty, Mentat runs in mock mode — camera, mic, UI, and finalize all still work.
+Notes:
 
-For Firestore persistence (optional):
+- `GEMINI_API_KEY` is optional. If blank, the app still runs in mock mode.
+- Leave `FIRESTORE_EMULATOR_HOST` blank unless you wire Firestore later.
+- The current web app is single-user by default. It binds to one local profile and does not ask for a visible user ID.
 
-```env
-FIREBASE_PROJECT_ID=your_project
-FIREBASE_SERVICE_ACCOUNT={"type":"service_account",...}
-```
+## Run locally
 
-Without Firestore config, session data persists in-memory (resets on server restart).
-
-### Seed demo data
+Terminal 1:
 
 ```bash
-cd apps/api && npm run seed
+cd apps/api
+npm run dev
 ```
 
-Creates the Alex demo user with 3 historical sessions and progress data.
+Terminal 2:
 
-### Run
-
-Terminal 1 (API):
 ```bash
-cd apps/api && npm run dev
+cd apps/web
+npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-Terminal 2 (Web):
-```bash
-cd apps/web && npm run dev -- --host 0.0.0.0 --port 5173
-```
+Open:
 
-Open `http://127.0.0.1:5173` on desktop or your phone (same network).
+- Web: `http://127.0.0.1:5173`
+- API: `http://127.0.0.1:8000`
 
-In production, the API also serves the built PWA from the same Cloud Run service. Local Vite is only for development speed.
+The Vite dev server proxies `/api` and `/ws` to the API automatically.
 
-### Typecheck
+## Where data is stored
+
+Local store:
+
+- `C:\Users\loqpm\Documents\GitHub\Mentat\apps\api\data\local-store.json`
+
+Obsidian sync output:
+
+- `C:\Users\loqpm\Documents\Projects\Obsidian Vault\Projects\Mentat\Knowledge\`
+
+## Voice knowledge flow
+
+1. Open the app.
+2. Go to the Knowledge card.
+3. Pick a domain and subdomain, for example `Sports / Chess`.
+4. Click `Start voice capture`.
+5. Speak your update.
+6. Stop capture and click `Save knowledge`.
+
+Mentat will:
+
+- store the transcript
+- extract a summary
+- extract key points
+- detect a next action if present
+- sync the resulting markdown into Obsidian
+
+## Useful commands
 
 ```bash
 npm run typecheck
+npm --workspace apps/api run build
+npm --workspace apps/web run build
 ```
-
-## Demo Script
-
-### Setup (before demo)
-
-1. `npm install` and `npm run seed` in `apps/api`
-2. Set `GEMINI_API_KEY` in `apps/api/.env`
-3. Start both servers
-4. Open on phone browser, install PWA ("Add to Home Screen")
-
-### Demo flow (3 minutes)
-
-1. **Open Mentat** — show it loads as a standalone PWA on phone
-2. **Enter user ID** `alex-demo` — show context loads with accountability from prior sessions
-3. **Pick personality** (sensei) — start session
-4. **Readiness check** — Mentat asks to see full body, racket, and stance before coaching
-5. **Live coaching** — point camera at table tennis practice, Mentat gives real-time corrections
-6. **End session** — show the 4-step finalize animation: close loop, score, fix list, refresh memory
-7. **Post-session review** — show the generated summary, scores, and drill-specific fix list
-8. **Progress dashboard** — show streak, session count, and that memory persists
-
-### Key talking points
-
-- "Mentat remembers" — show accountability items loading from prior sessions
-- "Coach, not chatbot" — readiness gate + one-fix-at-a-time philosophy
-- "Real multimodal" — live video frames + audio streaming to Gemini Live API
-- "Memory pipeline" — Gemini Flash generates structured summaries, stored in Firestore
-
-## Deployment (Cloud Run)
-
-```bash
-# Build the workspace first
-npm run build
-
-# Build the image
-docker build -t mentat .
-
-# Tag and push
-docker tag mentat gcr.io/YOUR_PROJECT/mentat
-docker push gcr.io/YOUR_PROJECT/mentat
-
-# Deploy
-gcloud run deploy mentat \
-  --image gcr.io/YOUR_PROJECT/mentat \
-  --port 8080 \
-  --set-env-vars "GEMINI_API_KEY=your_key,FIREBASE_PROJECT_ID=your_project" \
-  --allow-unauthenticated \
-  --region us-central1
-```
-
-After deploy:
-- the PWA is served from `/`
-- health is served from `/api/health`
-- REST routes live under `/api/*`
-- the live coaching bridge upgrades on `/ws/session`
-- the container starts the API from source through `tsx`, while the workspace build still runs during image creation as a deployment check
 
 ## Notes
 
-- The hackathon MVP is scoped to table tennis. The Domain type supports 6 life domains for future expansion.
-- Without Gemini credentials, the mock bridge provides the same session lifecycle for local testing.
-- The service worker caches the app shell for offline launch, but live coaching requires an active connection.
+- The current hackathon MVP is still table-tennis-first for the live coaching flow.
+- Knowledge capture already supports broader domains such as sports, work, learning, home, and health.
+- Firestore is optional and not required for the current local setup.
