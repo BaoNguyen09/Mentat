@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loadEnvironment } from "./lib/env.js";
+import { knowledgeRoutes } from "./routes/knowledge.js";
 import { progressRoutes } from "./routes/progress.js";
 import { sessionRoutes } from "./routes/sessions.js";
 import { attachLiveSessionBridge } from "./ws/session.js";
@@ -50,6 +51,7 @@ app.get("/api/health", (c) => {
 
 app.route("/api/sessions", sessionRoutes);
 app.route("/api/progress", progressRoutes);
+app.route("/api/knowledge", knowledgeRoutes);
 
 app.get("*", async (c) => {
   if (!isAppRoute(c.req.path) || !existsSync(webIndexPath)) {

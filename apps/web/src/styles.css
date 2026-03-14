@@ -35,7 +35,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -240,7 +241,20 @@ button {
   outline: none;
 }
 
-.text-input:focus {
+.text-area {
+  width: 100%;
+  min-height: 140px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--text);
+  resize: vertical;
+  outline: none;
+}
+
+.text-input:focus,
+.text-area:focus {
   border-color: var(--accent-strong);
   box-shadow: 0 0 0 4px rgba(128, 164, 237, 0.18);
 }
@@ -589,6 +603,26 @@ button {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.knowledge-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.knowledge-item {
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.knowledge-item__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
 .score-row {
   margin-bottom: 8px;
   font-size: 0.92rem;
@@ -632,6 +666,7 @@ button {
   .app-grid,
   .hero__stats,
   .setup-grid,
+  .knowledge-grid,
   .summary-grid,
   .live-preview__meta,
   .score-grid,

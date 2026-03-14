@@ -63,12 +63,12 @@ export function CoachSetupCard({
     >
       <div className="stack-md">
         <label className="field">
-          <span className="field__label">Demo user id</span>
+          <span className="field__label">User id</span>
           <input
             className="text-input"
             disabled={isBusy}
             onChange={(event) => onUserIdChange(event.target.value)}
-            placeholder="alex-demo"
+            placeholder="your-user-id"
             value={userId}
           />
         </label>

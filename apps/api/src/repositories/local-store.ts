@@ -1,4 +1,9 @@
-import type { Profile, ProgressSnapshot, SessionSummary } from "@mentat/types";
+import type {
+  DomainKnowledgeEntry,
+  Profile,
+  ProgressSnapshot,
+  SessionSummary,
+} from "@mentat/types";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,6 +12,7 @@ interface LocalStore {
   profiles: Record<string, Profile>;
   progress: Record<string, ProgressSnapshot>;
   sessions: SessionSummary[];
+  knowledgeEntries: DomainKnowledgeEntry[];
 }
 
 const localStorePath = path.resolve(
@@ -18,6 +24,7 @@ const defaultStore: LocalStore = {
   profiles: {},
   progress: {},
   sessions: [],
+  knowledgeEntries: [],
 };
 
 let localStoreCache: LocalStore | null = null;
@@ -35,7 +42,13 @@ export async function readLocalStore(): Promise<LocalStore> {
 
   try {
     const raw = await readFile(localStorePath, "utf8");
-    localStoreCache = JSON.parse(raw) as LocalStore;
+    const parsed = JSON.parse(raw) as Partial<LocalStore>;
+    localStoreCache = {
+      profiles: parsed.profiles ?? {},
+      progress: parsed.progress ?? {},
+      sessions: parsed.sessions ?? [],
+      knowledgeEntries: parsed.knowledgeEntries ?? [],
+    };
   } catch {
     localStoreCache = structuredClone(defaultStore);
     await writeLocalStore(localStoreCache);

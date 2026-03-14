@@ -1,10 +1,15 @@
 import type {
+  KnowledgeFeedResponse,
   FinalizeSessionRequest,
   FinalizeSessionResponse,
   ProgressResponse,
   SessionContextResponse,
+  SyncKnowledgeToObsidianRequest,
+  SyncKnowledgeToObsidianResponse,
   StartSessionRequest,
   StartSessionResponse,
+  TrackKnowledgeEntryRequest,
+  TrackKnowledgeEntryResponse,
 } from "@mentat/types";
 
 export const apiBaseUrl = "/api";
@@ -68,4 +73,30 @@ export async function fetchProgress(
   return requestJson<ProgressResponse>(
     `/progress/${encodeURIComponent(userId)}`,
   );
+}
+
+export async function fetchKnowledgeEntries(
+  userId: string,
+): Promise<KnowledgeFeedResponse> {
+  return requestJson<KnowledgeFeedResponse>(
+    `/knowledge/${encodeURIComponent(userId)}`,
+  );
+}
+
+export async function trackKnowledgeEntry(
+  payload: TrackKnowledgeEntryRequest,
+): Promise<TrackKnowledgeEntryResponse> {
+  return requestJson<TrackKnowledgeEntryResponse>("/knowledge/track", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function syncKnowledgeToObsidian(
+  payload: SyncKnowledgeToObsidianRequest,
+): Promise<SyncKnowledgeToObsidianResponse> {
+  return requestJson<SyncKnowledgeToObsidianResponse>("/knowledge/sync", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

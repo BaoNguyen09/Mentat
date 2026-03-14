@@ -221,3 +221,47 @@ export interface ProgressResponse {
   snapshot: ProgressSnapshot;
   recentSessions: SessionSummary[];
 }
+
+// Knowledge tracking
+
+export type KnowledgeSource = "voice" | "text";
+
+export interface DomainKnowledgeEntry {
+  entryId: string;
+  userId: string;
+  domainGroup: string;
+  subdomain: string;
+  source: KnowledgeSource;
+  transcript: string;
+  summary: string;
+  keyPoints: string[];
+  nextAction: string | null;
+  createdAt: string;
+}
+
+export interface TrackKnowledgeEntryRequest {
+  userId: string;
+  domainGroup: string;
+  subdomain: string;
+  source: KnowledgeSource;
+  transcript: string;
+}
+
+export interface TrackKnowledgeEntryResponse {
+  entry: DomainKnowledgeEntry;
+}
+
+export interface KnowledgeFeedResponse {
+  userId: string;
+  entries: DomainKnowledgeEntry[];
+}
+
+export interface SyncKnowledgeToObsidianRequest {
+  userId: string;
+}
+
+export interface SyncKnowledgeToObsidianResponse {
+  userId: string;
+  pages: string[];
+  syncedAt: string;
+}

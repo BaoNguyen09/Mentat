@@ -6,9 +6,11 @@ import type { Personality } from "@mentat/types";
 import { AnalysisStepper } from "./components/AnalysisStepper";
 import { CoachSetupCard } from "./components/CoachSetupCard";
 import { FixListCard } from "./components/FixListCard";
+import { KnowledgeCaptureCard } from "./components/KnowledgeCaptureCard";
 import { PerformanceSummaryCard } from "./components/PerformanceSummaryCard";
 import { ProgressOverviewCard } from "./components/ProgressOverviewCard";
 import { SessionExperienceCard } from "./components/SessionExperienceCard";
+import { useKnowledge } from "./hooks/useKnowledge";
 import { useProgress } from "./hooks/useProgress";
 import { useSession } from "./hooks/useSession";
 
@@ -16,10 +18,10 @@ const userIdStorageKey = "mentat-user-id";
 
 function getInitialUserId() {
   if (typeof window === "undefined") {
-    return "alex-demo";
+    return "";
   }
 
-  return window.localStorage.getItem(userIdStorageKey) ?? "alex-demo";
+  return window.localStorage.getItem(userIdStorageKey) ?? "";
 }
 
 export function App() {
@@ -27,6 +29,7 @@ export function App() {
   const [personality, setPersonality] = useState<Personality>("sensei");
 
   const progress = useProgress(userId);
+  const knowledge = useKnowledge(userId);
   const session = useSession({
     userId,
     domain: "table-tennis",
@@ -95,6 +98,21 @@ export function App() {
             onRefreshContext={session.refreshContext}
             onUserIdChange={setUserId}
             personality={personality}
+            userId={userId}
+          />
+
+          <KnowledgeCaptureCard
+            entries={knowledge.entries}
+            error={knowledge.error}
+            isLoading={knowledge.status === "loading"}
+            onSave={async (input) => {
+              await knowledge.saveEntry(input);
+              await knowledge.sync();
+            }}
+            onSync={async () => {
+              await knowledge.sync();
+            }}
+            syncMessage={knowledge.syncMessage}
             userId={userId}
           />
 
