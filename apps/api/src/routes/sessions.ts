@@ -18,10 +18,15 @@ export const sessionRoutes = new Hono()
       getRecentSessionSummaries(userId, 5),
       getUserProfile(userId),
     ]);
+    const latestSummary = recentSummaries[0];
 
-    const accountability = recentSummaries
-      .flatMap((s) => s.fixList.map((f) => f.drill))
-      .slice(0, 5);
+    const accountability =
+      latestSummary?.fixList.map((fix) => fix.drill).slice(0, 5) ?? [];
+    const latestFixList = latestSummary?.fixList ?? [];
+    const memoryDigest = recentSummaries
+      .map((summary) => summary.compressedSummary)
+      .filter(Boolean)
+      .slice(0, 3);
 
     const response: SessionContextResponse = {
       userId,
@@ -34,6 +39,8 @@ export const sessionRoutes = new Hono()
               "Practice backhand topspin for 15 minutes",
               "Focus on recovery stance after each shot",
             ],
+      latestFixList,
+      memoryDigest,
       profile,
     };
     return c.json(response);
@@ -42,12 +49,15 @@ export const sessionRoutes = new Hono()
     const body = (await c.req.json().catch(() => ({}))) as StartSessionRequest;
 
     const recentSummaries = await getRecentSessionSummaries(body.userId, 3);
-    const accountability = recentSummaries
-      .flatMap((s) => s.fixList.map((f) => f.drill))
-      .slice(0, 5);
-    const recentFixItems = recentSummaries
-      .flatMap((s) => s.fixList.map((f) => f.item))
-      .slice(0, 5);
+    const latestSummary = recentSummaries[0];
+    const accountability =
+      latestSummary?.fixList.map((fix) => fix.drill).slice(0, 5) ?? [];
+    const recentFixItems =
+      latestSummary?.fixList.map((fix) => fix.item).slice(0, 5) ?? [];
+    const memoryDigest = recentSummaries
+      .map((summary) => summary.compressedSummary)
+      .filter(Boolean)
+      .slice(0, 3);
 
     const bridge = createLiveSessionBridge({
       userId: body.userId,
@@ -55,6 +65,7 @@ export const sessionRoutes = new Hono()
       personality: body.personality,
       accountability,
       recentFixItems,
+      memoryDigest,
     });
     const response: StartSessionResponse = {
       sessionId: bridge.sessionId,

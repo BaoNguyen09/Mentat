@@ -563,6 +563,13 @@ export function useSession({
         "memory",
       );
 
+      if (nextContext?.memoryDigest?.[0]) {
+        appendEvent(
+          `Recent memory: ${nextContext.memoryDigest[0]}`,
+          "memory",
+        );
+      }
+
       if (nextContext?.accountability?.[0]) {
         appendEvent(
           `Opening reminder: ${nextContext.accountability[0]}`,

@@ -1,7 +1,8 @@
-import type { Profile, ProgressSnapshot, SessionSummary } from "@mentat/types";
-import { isFirestoreConfigured, getFirestoreClient } from "./lib/firestore";
+import type { Profile, SessionSummary } from "@mentat/types";
+
 import { loadEnvironment } from "./lib/env";
 import { saveSessionRecord } from "./repositories/sessions";
+import { saveUserProfile } from "./repositories/users";
 
 loadEnvironment();
 
@@ -13,20 +14,16 @@ const ALEX_PROFILE: Profile = {
   createdAt: "2026-03-01T00:00:00Z",
 };
 
-const ALEX_PROGRESS: ProgressSnapshot = {
-  userId: "alex-demo",
-  domain: "table-tennis",
-  streak: 3,
-  sessionsCompleted: 7,
-};
-
 const SEED_SESSIONS: SessionSummary[] = [
   {
     sessionId: "seed-001",
+    userId: "alex-demo",
     sessionDate: "2026-03-07T10:00:00Z",
     domain: "table-tennis",
     personality: "sensei",
     durationSeconds: 360,
+    compressedSummary:
+      "Alex started finding forehand topspin shape but still leaves the paddle face too open.",
     topScores: [
       { area: "engagement", score: 9 },
       { area: "technique", score: 7 },
@@ -55,10 +52,13 @@ const SEED_SESSIONS: SessionSummary[] = [
   },
   {
     sessionId: "seed-002",
+    userId: "alex-demo",
     sessionDate: "2026-03-09T14:00:00Z",
     domain: "table-tennis",
     personality: "hype",
     durationSeconds: 420,
+    compressedSummary:
+      "Alex improved recovery speed and backhand control, but elbow drift still shows up under pace.",
     topScores: [
       { area: "technique", score: 8 },
       { area: "improvement", score: 8 },
@@ -87,10 +87,13 @@ const SEED_SESSIONS: SessionSummary[] = [
   },
   {
     sessionId: "seed-003",
+    userId: "alex-demo",
     sessionDate: "2026-03-11T09:30:00Z",
     domain: "table-tennis",
     personality: "drill_sergeant",
     durationSeconds: 300,
+    compressedSummary:
+      "Alex held ready stance better and cleaned up paddle angle, with follow-through still needing work.",
     topScores: [
       { area: "engagement", score: 9 },
       { area: "consistency", score: 7 },
@@ -116,18 +119,8 @@ const SEED_SESSIONS: SessionSummary[] = [
 
 async function seed() {
   console.log("Seeding Alex demo user...");
-
-  if (isFirestoreConfigured()) {
-    const db = getFirestoreClient();
-    await db.collection("profiles").doc("alex-demo").set(ALEX_PROFILE);
-    await db
-      .collection("progress")
-      .doc("alex-demo_table-tennis")
-      .set(ALEX_PROGRESS);
-    console.log("Firestore: profile and progress written.");
-  } else {
-    console.log("Firestore not configured — seeding in-memory store only.");
-  }
+  await saveUserProfile(ALEX_PROFILE);
+  console.log("Profile written through repository layer.");
 
   for (const session of SEED_SESSIONS) {
     await saveSessionRecord(session);

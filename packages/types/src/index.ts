@@ -43,10 +43,12 @@ export interface FixItem {
 
 export interface SessionSummary {
   sessionId: string;
+  userId: string;
   sessionDate: string;
   domain: Domain;
   personality: Personality;
   durationSeconds: number;
+  compressedSummary: string;
   topScores: Array<{ area: keyof Score; score: number }>;
   weakAreas: Array<{ area: keyof Score; score: number }>;
   memorableMoments: string[];
@@ -69,6 +71,11 @@ export interface ProgressSnapshot {
   domain: Domain;
   streak: number;
   sessionsCompleted: number;
+  averageTopScore: number;
+  lastSessionDate: string | null;
+  latestImprovement: string | null;
+  currentFocus: string | null;
+  trend: "up" | "flat" | "down";
 }
 
 // ── Prompt modules ──────────────────────────────
@@ -188,6 +195,8 @@ export interface SessionContextResponse {
   domain: Domain;
   recentSummaries: SessionSummary[];
   accountability: string[];
+  latestFixList: FixItem[];
+  memoryDigest: string[];
   profile: Profile;
 }
 

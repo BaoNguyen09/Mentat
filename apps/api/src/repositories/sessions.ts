@@ -1,28 +1,38 @@
 import type { SessionSummary } from "@mentat/types";
+
 import { getFirestoreClient, isFirestoreConfigured } from "../lib/firestore";
+import { validateSessionSummary } from "../lib/validators";
+import { readLocalStore, updateLocalStore } from "./local-store";
 
 const COLLECTION = "sessions";
 
-const inMemoryStore: SessionSummary[] = [];
-
 export async function saveSessionRecord(summary: SessionSummary): Promise<void> {
+  const validated = validateSessionSummary(summary);
+
   if (!isFirestoreConfigured()) {
-    inMemoryStore.push(summary);
+    await updateLocalStore((store) => {
+      store.sessions = store.sessions.filter(
+        (entry) => entry.sessionId !== validated.sessionId,
+      );
+      store.sessions.push(validated);
+    });
     return;
   }
 
   const db = getFirestoreClient();
-  await db.collection(COLLECTION).doc(summary.sessionId).set(summary);
+  await db.collection(COLLECTION).doc(validated.sessionId).set(validated);
 }
 
 export async function getRecentSessionSummaries(
   userId: string,
-  limit = 5
+  limit = 5,
 ): Promise<SessionSummary[]> {
   if (!isFirestoreConfigured()) {
-    return inMemoryStore
-      .filter((s) => s.sessionId.includes(userId) || true)
-      .slice(-limit);
+    const store = await readLocalStore();
+    return store.sessions
+      .filter((session) => session.userId === userId)
+      .sort((left, right) => right.sessionDate.localeCompare(left.sessionDate))
+      .slice(0, limit);
   }
 
   const db = getFirestoreClient();
@@ -33,5 +43,11 @@ export async function getRecentSessionSummaries(
     .limit(limit)
     .get();
 
-  return snap.docs.map((doc) => doc.data() as SessionSummary);
+  return snap.docs.map((doc) => validateSessionSummary(doc.data() as SessionSummary));
+}
+
+export async function getAllSessionSummaries(
+  userId: string,
+): Promise<SessionSummary[]> {
+  return getRecentSessionSummaries(userId, 500);
 }

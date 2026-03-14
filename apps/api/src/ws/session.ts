@@ -20,6 +20,7 @@ export interface LiveSessionBridgeConfig {
   personality: Personality;
   accountability?: string[];
   recentFixItems?: string[];
+  memoryDigest?: string[];
 }
 
 interface MockState {
@@ -54,6 +55,7 @@ function buildSystemInstruction(record: SessionRecord) {
     personality: record.personality,
     accountability: record.accountability,
     recentFixItems: record.recentFixItems,
+    memoryDigest: record.memoryDigest,
   });
 }
 
@@ -63,6 +65,7 @@ function buildKickoffMessage(record: SessionRecord) {
     personality: record.personality,
     accountability: record.accountability,
     recentFixItems: record.recentFixItems,
+    memoryDigest: record.memoryDigest,
   });
 }
 

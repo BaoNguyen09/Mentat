@@ -56,6 +56,29 @@ export function ProgressOverviewCard({
               <span className="mini-panel__label">Domain</span>
               <strong>{data.snapshot.domain}</strong>
             </div>
+            <div className="mini-panel">
+              <span className="mini-panel__label">Trend</span>
+              <strong>{data.snapshot.trend}</strong>
+            </div>
+            <div className="mini-panel">
+              <span className="mini-panel__label">Avg top score</span>
+              <strong>{data.snapshot.averageTopScore}/10</strong>
+            </div>
+            <div className="mini-panel">
+              <span className="mini-panel__label">Last session</span>
+              <strong>
+                {data.snapshot.lastSessionDate
+                  ? formatSessionDate(data.snapshot.lastSessionDate)
+                  : "No sessions"}
+              </strong>
+            </div>
+          </div>
+
+          <div className="callout">
+            <p className="callout__title">Latest improvement</p>
+            <p>{data.snapshot.latestImprovement ?? "Complete a session to populate this."}</p>
+            <p className="section-label">Current focus</p>
+            <p>{data.snapshot.currentFocus ?? "No current focus yet."}</p>
           </div>
 
           <div className="stack-sm">

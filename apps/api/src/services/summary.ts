@@ -1,4 +1,5 @@
 import type { Domain, Personality, Score, SessionSummary } from "@mentat/types";
+
 import { getGeminiClient } from "../lib/gemini";
 
 const SUMMARY_MODEL = "gemini-2.0-flash";
@@ -7,6 +8,7 @@ const SUMMARY_PROMPT = `You are analyzing a coaching session to produce a struct
 Given the session metadata below, generate a JSON object with these exact fields:
 
 {
+  "compressedSummary": "<two short sentences capturing the session for future context>",
   "topScores": [{ "area": "<keyof Score>", "score": <1-10> }, ...],
   "weakAreas": [{ "area": "<keyof Score>", "score": <1-10> }, ...],
   "memorableMoments": ["<string>", ...],
@@ -29,10 +31,13 @@ interface GenerateSummaryInput {
 function buildFallbackSummary(input: GenerateSummaryInput): SessionSummary {
   return {
     sessionId: input.sessionId,
+    userId: input.userId,
     sessionDate: new Date().toISOString(),
     domain: input.domain,
     personality: input.personality,
     durationSeconds: input.durationSeconds,
+    compressedSummary:
+      "Completed a coaching session and captured one main form correction for next time.",
     topScores: [
       { area: "engagement", score: 8 },
       { area: "technique", score: 7 },
@@ -54,7 +59,7 @@ function buildFallbackSummary(input: GenerateSummaryInput): SessionSummary {
 }
 
 export async function generateSessionSummary(
-  input: GenerateSummaryInput
+  input: GenerateSummaryInput,
 ): Promise<SessionSummary> {
   try {
     const client = getGeminiClient();
@@ -77,10 +82,14 @@ ${input.coachTranscript.slice(-20).join("\n")}`;
 
     return {
       sessionId: input.sessionId,
+      userId: input.userId,
       sessionDate: new Date().toISOString(),
       domain: input.domain,
       personality: input.personality,
       durationSeconds: input.durationSeconds,
+      compressedSummary:
+        parsed.compressedSummary ??
+        "Finished a coaching session with one main correction to revisit.",
       topScores: parsed.topScores ?? [],
       weakAreas: parsed.weakAreas ?? [],
       memorableMoments: parsed.memorableMoments ?? [],

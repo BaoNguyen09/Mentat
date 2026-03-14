@@ -104,6 +104,23 @@ export function CoachSetupCard({
           </ul>
         </div>
 
+        <div className="callout">
+          <p className="callout__title">Recent memory digest</p>
+          <ul className="bullet-list">
+            {(context?.memoryDigest ?? []).map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+          <p className="section-label">Latest fix list</p>
+          <ul className="bullet-list">
+            {(context?.latestFixList ?? []).map((item) => (
+              <li key={`${item.item}-${item.drill}`}>
+                <strong>{item.item}:</strong> {item.drill}
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <div className="setup-grid">
           <div className="mini-panel">
             <span className="mini-panel__label">Domain</span>

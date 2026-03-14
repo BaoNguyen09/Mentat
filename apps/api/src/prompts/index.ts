@@ -30,6 +30,7 @@ export interface PromptAssemblyInput {
   personality: Personality;
   accountability?: string[];
   recentFixItems?: string[];
+  memoryDigest?: string[];
 }
 
 export function assembleSystemInstruction(input: PromptAssemblyInput) {
@@ -69,6 +70,14 @@ If any check fails, give one short corrective instruction and re-check. Do not m
     );
   }
 
+  if (input.memoryDigest?.length) {
+    promptLayers.push(
+      `Compact session memory for this player:\n${input.memoryDigest
+        .map((item, index) => `${index + 1}. ${item}`)
+        .join("\n")}`,
+    );
+  }
+
   return promptLayers.join("\n\n");
 }
 
@@ -87,6 +96,12 @@ export function assembleKickoffMessage(input: PromptAssemblyInput) {
   if (input.accountability?.[0]) {
     parts.push(
       `After readiness is confirmed, reference this accountability item from the last session: "${input.accountability[0]}".`,
+    );
+  }
+
+  if (input.memoryDigest?.[0]) {
+    parts.push(
+      `Keep this recent memory in mind while you coach: "${input.memoryDigest[0]}".`,
     );
   }
 
