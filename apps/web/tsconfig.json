@@ -1,6 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "outDir": ".turbo/types",
+    "rootDir": ".",
     "jsx": "react-jsx",
     "types": [
       "vite/client"
