@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowRight,
   BrainCircuit,
   CheckCircle2,
-  Circle,
   House,
   Mic,
   PenSquare,
@@ -33,6 +31,15 @@ interface KnowledgePreset {
   domainGroup: string;
   subdomain: string;
   guidance: string;
+}
+
+interface QuickAction {
+  id: string;
+  title: string;
+  detail: string;
+  cta: string;
+  done: boolean;
+  run: () => void;
 }
 
 interface LocalOnboardingState {
@@ -101,9 +108,7 @@ export function App() {
   const [onboarding, setOnboarding] = useState<LocalOnboardingState>(
     readStoredOnboarding,
   );
-  const [isEditingProfile, setIsEditingProfile] = useState(
-    !readStoredOnboarding().complete,
-  );
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   const progress = useProgress(userId);
   const knowledge = useKnowledge(userId);
@@ -158,6 +163,8 @@ export function App() {
   );
 
   const greetingName = onboarding.name.trim() || "Mentat user";
+  const primaryGoalText =
+    onboarding.primaryGoal.trim() || "Use tonight for deliberate practice instead of drift.";
   const storedChessFocus = onboarding.chessFocus.trim();
   const storedTableTennisFocus = onboarding.tableTennisFocus.trim();
   const recentLiveSummary = progress.data?.recentSessions.find((entry) =>
@@ -168,13 +175,6 @@ export function App() {
     tableTennisEntry && isToday(tableTennisEntry.createdAt),
   );
   const liveSessionToday = Boolean(recentLiveSummary);
-  const chessNextStep =
-    chessEntry?.nextAction ??
-    (storedChessFocus || "Capture a short chess reflection by voice.");
-  const tableTennisNextStep =
-    fixList[0]?.drill ??
-    progressSnapshot?.currentFocus ??
-    (storedTableTennisFocus || session.currentFocus);
 
   const saveOnboarding = () => {
     const nextState = {
@@ -200,62 +200,58 @@ export function App() {
     setView("live");
   };
 
-  const quickActions = onboarding.complete
-    ? [
-        {
-          id: "chess-reflection",
-          title: "Log your latest chess session",
-          detail: chessLoggedToday
-            ? chessEntry?.summary ??
-              "Your chess reflection is already saved for today."
-            : "Capture the result, the pattern, and the next adjustment before it fades.",
-          cta: "Open chess note",
-          done: chessLoggedToday,
-          run: () =>
-            openKnowledge({
-              domainGroup: "Sports",
-              subdomain: "Chess",
-              guidance:
-                "Start with the result, then say what repeated, where you tilted, and what you should review next.",
-            }),
-        },
-        {
-          id: "tt-live",
-          title: "Run a table tennis readiness check",
-          detail: liveSessionToday
-            ? recentLiveSummary?.keyImprovement ??
-              "You already completed a live table tennis session today."
-            : progressSnapshot?.currentFocus ??
-              "Stand side-on with the racket visible and let Mentat clear the live readiness gate.",
-          cta: "Open live coaching",
-          done: liveSessionToday,
-          run: openLive,
-        },
-        {
-          id: "tt-note",
-          title: "Store the main table tennis fix",
-          detail: tableTennisLoggedToday
-            ? tableTennisEntry?.summary ??
-              "Your table tennis practice note is already stored for today."
-            : fixList[0]?.drill ??
-              tableTennisEntry?.summary ??
-              "Save one practice note so the next live session starts with context.",
-          cta: "Open table tennis note",
-          done: tableTennisLoggedToday,
-          run: () =>
-            openKnowledge({
-              domainGroup: "Sports",
-              subdomain: "Table Tennis",
-              guidance:
-                "Say what felt off, what one fix matters most, and what drill you want to repeat next time.",
-            }),
-        },
-      ]
-    : [];
+  const quickActions: QuickAction[] = [
+    {
+      id: "chess-reflection",
+      title: "Log your latest chess session",
+      detail: chessLoggedToday
+        ? chessEntry?.summary ??
+          "Your chess reflection is already saved for today."
+        : "Capture the result, the pattern, and the next adjustment before it fades.",
+      cta: "Open chess note",
+      done: chessLoggedToday,
+      run: () =>
+        openKnowledge({
+          domainGroup: "Sports",
+          subdomain: "Chess",
+          guidance:
+            "Start with the result, then say what repeated, where you tilted, and what you should review next.",
+        }),
+    },
+    {
+      id: "tt-live",
+      title: "Run a table tennis readiness check",
+      detail: liveSessionToday
+        ? recentLiveSummary?.keyImprovement ??
+          "You already completed a live table tennis session today."
+        : progressSnapshot?.currentFocus ??
+          "Stand side-on with the racket visible and let Mentat clear the live readiness gate.",
+      cta: "Open live coaching",
+      done: liveSessionToday,
+      run: openLive,
+    },
+    {
+      id: "tt-note",
+      title: "Store the main table tennis fix",
+      detail: tableTennisLoggedToday
+        ? tableTennisEntry?.summary ??
+          "Your table tennis practice note is already stored for today."
+        : fixList[0]?.drill ??
+          tableTennisEntry?.summary ??
+          "Save one practice note so the next live session starts with context.",
+      cta: "Open table tennis note",
+      done: tableTennisLoggedToday,
+      run: () =>
+        openKnowledge({
+          domainGroup: "Sports",
+          subdomain: "Table Tennis",
+          guidance:
+            "Say what felt off, what one fix matters most, and what drill you want to repeat next time.",
+        }),
+    },
+  ];
 
-  const recommendedAction = onboarding.complete
-    ? quickActions.find((action) => !action.done) ?? quickActions[0]
-    : null;
+  const recommendedAction = quickActions.find((action) => !action.done) ?? quickActions[0];
   const todayCompletionCount = [
     chessLoggedToday,
     liveSessionToday,
@@ -283,7 +279,7 @@ export function App() {
           <div className="brand-mark">M</div>
           <div className="brand-copy">
             <strong>Mentat</strong>
-            <span>single-user coaching workspace</span>
+            <span>{greetingName}</span>
           </div>
         </div>
 
@@ -304,431 +300,195 @@ export function App() {
         </nav>
       </header>
 
-      <section className="masthead">
-        <div className="masthead__copy">
-          <p className="eyebrow">Personal operating space</p>
-          <h1>
-            One place for practice, reflection, and the next move that actually
-            matters.
-          </h1>
-          <p className="masthead__lede">
-            Mentat should feel like your own coach, not a task demo. Use the
-            knowledge workspace to capture chess lessons by voice, then switch
-            into the live table tennis flow when you want camera-guided
-            coaching.
-          </p>
-          <div className="masthead__actions">
-            <button
-              className="primary-button"
-              onClick={() =>
-                openKnowledge({
-                  domainGroup: "Sports",
-                  subdomain: "Chess",
-                  guidance:
-                    "Start with the result, then say what repeated, where you tilted, and what you should review next.",
-                })
-              }
-              type="button"
-            >
-              <BrainCircuit size={18} />
-              Capture chess reflection
-            </button>
-            <button
-              className="ghost-button"
-              onClick={openLive}
-              type="button"
-            >
-              <Swords size={16} />
-              Start table tennis
-            </button>
-          </div>
-        </div>
-
-        <div className="masthead__stats">
-          <article className="dashboard-stat">
-            <span>Status</span>
-            <strong>{session.status}</strong>
-          </article>
-          <article className="dashboard-stat">
-            <span>Current live focus</span>
-            <strong>{session.currentFocus}</strong>
-          </article>
-          <article className="dashboard-stat">
-            <span>Knowledge entries</span>
-            <strong>{knowledge.entries.length}</strong>
-          </article>
-          <article className="dashboard-stat">
-            <span>Session streak</span>
-            <strong>{progressSnapshot?.streak ?? 0}</strong>
-          </article>
-          <article className="dashboard-stat">
-            <span>Today</span>
-            <strong>{todayCompletionLabel}</strong>
-          </article>
-        </div>
-      </section>
-
       {view === "home" ? (
-        <section className="dashboard-grid">
-          <div className="stack-lg">
-            <SurfaceCard
-              eyebrow="Home"
-              title={
-                onboarding.complete
-                  ? `Welcome back, ${greetingName}`
-                  : "Set up your Mentat workspace"
-              }
-              description={
-                onboarding.complete
-                  ? "This is the personal dashboard layer that should orient you before you drop into a live session or a voice note."
-                  : "Take one minute to tell Mentat what you care about. That gives the home screen something real to organize around."
-              }
-              action={
-                onboarding.complete ? (
-                  <button
-                    className="ghost-button"
-                    onClick={() => setIsEditingProfile((current) => !current)}
-                    type="button"
-                  >
-                    <PenSquare size={16} />
-                    {isEditingProfile ? "Close editor" : "Edit profile"}
-                  </button>
-                ) : null
-              }
+        <section className="start-view">
+          <div className="start-panel">
+            <p className="eyebrow">Start</p>
+            <h1>Mentat</h1>
+            <p className="start-panel__lede">
+              {recommendedAction?.title ?? "Start with a short voice note."}
+            </p>
+            <p className="start-panel__support">
+              {recommendedAction?.detail ?? primaryGoalText}
+            </p>
+
+            <button
+              aria-label={recommendedAction?.cta ?? "Start"}
+              className="voice-launch"
+              onClick={() => {
+                recommendedAction?.run();
+              }}
+              type="button"
             >
-              {isEditingProfile || !onboarding.complete ? (
-                <div className="profile-form">
-                  <div className="profile-form__grid">
-                    <label className="field">
-                      <span className="field__label">Your name</span>
-                      <input
-                        className="text-input"
-                        onChange={(event) =>
-                          setOnboarding((current) => ({
-                            ...current,
-                            name: event.target.value,
-                          }))
-                        }
-                        placeholder="Paul"
-                        value={onboarding.name}
-                      />
-                    </label>
+              <Mic size={34} />
+            </button>
 
-                    <label className="field">
-                      <span className="field__label">Primary goal</span>
-                      <input
-                        className="text-input"
-                        onChange={(event) =>
-                          setOnboarding((current) => ({
-                            ...current,
-                            primaryGoal: event.target.value,
-                          }))
-                        }
-                        placeholder="Use evenings for focused growth instead of drift."
-                        value={onboarding.primaryGoal}
-                      />
-                    </label>
+            <p className="start-panel__hint">
+              {recommendedAction?.cta ?? "Open chess note"}
+            </p>
 
-                    <label className="field">
-                      <span className="field__label">Chess focus</span>
-                      <input
-                        className="text-input"
-                        onChange={(event) =>
-                          setOnboarding((current) => ({
-                            ...current,
-                            chessFocus: event.target.value,
-                          }))
-                        }
-                        placeholder="Stop tilt-queuing after blitz losses."
-                        value={onboarding.chessFocus}
-                      />
-                    </label>
+            <div className="start-meta">
+              <div className="mini-panel">
+                <span className="mini-panel__label">Today</span>
+                <strong>{todayCompletionLabel}</strong>
+              </div>
+              <div className="mini-panel">
+                <span className="mini-panel__label">Current focus</span>
+                <strong>
+                  {recommendedAction?.title ??
+                    progressSnapshot?.currentFocus ??
+                    primaryGoalText}
+                </strong>
+              </div>
+            </div>
 
-                    <label className="field">
-                      <span className="field__label">Table tennis focus</span>
-                      <input
-                        className="text-input"
-                        onChange={(event) =>
-                          setOnboarding((current) => ({
-                            ...current,
-                            tableTennisFocus: event.target.value,
-                          }))
-                        }
-                        placeholder="Get a repeatable ready stance and recovery."
-                        value={onboarding.tableTennisFocus}
-                      />
-                    </label>
-                  </div>
+            <div className="start-links">
+              <button
+                className="ghost-button"
+                onClick={() =>
+                  openKnowledge({
+                    domainGroup: "Sports",
+                    subdomain: "Chess",
+                    guidance:
+                      "Start with the result, then say what repeated, where you tilted, and what you should review next.",
+                  })
+                }
+                type="button"
+              >
+                <BrainCircuit size={16} />
+                Chess note
+              </button>
+              <button className="ghost-button" onClick={openLive} type="button">
+                <Swords size={16} />
+                Live session
+              </button>
+              <button
+                className="ghost-button"
+                onClick={() => setIsEditingProfile((current) => !current)}
+                type="button"
+              >
+                <PenSquare size={16} />
+                {isEditingProfile ? "Close setup" : "Edit focus"}
+              </button>
+            </div>
+          </div>
 
-                  <div className="stack-sm">
-                    <span className="field__label">Coaching tone</span>
-                    <div className="pill-row">
-                      {(["sensei", "hype", "drill_sergeant"] as Personality[]).map(
-                        (entry) => (
-                          <button
-                            key={entry}
-                            className={cx(
-                              "pill-button",
-                              onboarding.accountabilityStyle === entry &&
-                                "pill-button--active",
-                            )}
-                            onClick={() =>
-                              setOnboarding((current) => ({
-                                ...current,
-                                accountabilityStyle: entry,
-                              }))
-                            }
-                            type="button"
-                          >
-                            <strong>{entry.replace("_", " ")}</strong>
-                            <span>
-                              {entry === "sensei"
-                                ? "Calm and technical."
-                                : entry === "hype"
-                                  ? "Fast energy and momentum."
-                                  : "Strict and accountability-first."}
-                            </span>
-                          </button>
-                        ),
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="action-row">
-                    <button
-                      className="primary-button"
-                      onClick={saveOnboarding}
-                      type="button"
-                    >
-                      <CheckCircle2 size={18} />
-                      Save workspace
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="summary-grid">
-                  <div className="mini-panel">
-                    <span className="mini-panel__label">Primary goal</span>
-                    <strong>{onboarding.primaryGoal}</strong>
-                  </div>
-                  <div className="mini-panel">
-                    <span className="mini-panel__label">Chess focus</span>
-                    <strong>{onboarding.chessFocus}</strong>
-                  </div>
-                  <div className="mini-panel">
-                    <span className="mini-panel__label">Table tennis focus</span>
-                    <strong>{onboarding.tableTennisFocus}</strong>
-                  </div>
-                  <div className="mini-panel">
-                    <span className="mini-panel__label">Coaching tone</span>
-                    <strong>
-                      {onboarding.accountabilityStyle.replace("_", " ")}
-                    </strong>
-                  </div>
-                  <div className="mini-panel">
-                    <span className="mini-panel__label">Latest sync</span>
-                    <strong>{knowledge.syncMessage ?? "Not synced yet"}</strong>
-                  </div>
-                  <div className="mini-panel">
-                    <span className="mini-panel__label">Knowledge base</span>
-                    <strong>{knowledge.entries.length} saved entries</strong>
-                  </div>
-                </div>
-              )}
-            </SurfaceCard>
-
+          {isEditingProfile ? (
             <SurfaceCard
-              eyebrow="Tonight"
-              title="What Mentat thinks you should do next"
-              description="This should become the clearest part of the product: what to do now, why, and where to go."
+              eyebrow="Setup"
+              title="Edit your focus"
+              description="Only the few settings Mentat needs to aim the next step."
             >
-              <div className="stack-md">
-                {recommendedAction ? (
-                  <div className="priority-card">
-                    <div className="priority-card__header">
-                      <div>
-                        <p className="eyebrow">Do this now</p>
-                        <h3>{recommendedAction.title}</h3>
-                      </div>
-                      <span className="status-chip status-chip--active">
-                        next
-                      </span>
-                    </div>
-                    <p>{recommendedAction.detail}</p>
-                    <div className="action-row">
-                      <button
-                        className="primary-button"
-                        onClick={recommendedAction.run}
-                        type="button"
-                      >
-                        <ArrowRight size={16} />
-                        {recommendedAction.cta}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="callout">
-                    <p className="callout__title">Recommended next action</p>
-                    <p>{chessNextStep}</p>
-                  </div>
-                )}
+              <div className="profile-form">
+                <div className="profile-form__grid">
+                  <label className="field">
+                    <span className="field__label">Your name</span>
+                    <input
+                      className="text-input"
+                      onChange={(event) =>
+                        setOnboarding((current) => ({
+                          ...current,
+                          name: event.target.value,
+                        }))
+                      }
+                      placeholder="Paul"
+                      value={onboarding.name}
+                    />
+                  </label>
 
-                <div className="today-grid">
-                  <div className="mini-panel">
-                    <span className="mini-panel__label">Chess note today</span>
-                    <strong>{chessLoggedToday ? "Done" : "Missing"}</strong>
-                  </div>
-                  <div className="mini-panel">
-                    <span className="mini-panel__label">Live session today</span>
-                    <strong>{liveSessionToday ? "Done" : "Missing"}</strong>
-                  </div>
-                  <div className="mini-panel">
-                    <span className="mini-panel__label">TT note today</span>
-                    <strong>{tableTennisLoggedToday ? "Done" : "Missing"}</strong>
-                  </div>
+                  <label className="field">
+                    <span className="field__label">Primary goal</span>
+                    <input
+                      className="text-input"
+                      onChange={(event) =>
+                        setOnboarding((current) => ({
+                          ...current,
+                          primaryGoal: event.target.value,
+                        }))
+                      }
+                      placeholder="Use evenings for focused growth instead of drift."
+                      value={onboarding.primaryGoal}
+                    />
+                  </label>
+
+                  <label className="field">
+                    <span className="field__label">Chess focus</span>
+                    <input
+                      className="text-input"
+                      onChange={(event) =>
+                        setOnboarding((current) => ({
+                          ...current,
+                          chessFocus: event.target.value,
+                        }))
+                      }
+                      placeholder="Stop tilt-queuing after blitz losses."
+                      value={onboarding.chessFocus}
+                    />
+                  </label>
+
+                  <label className="field">
+                    <span className="field__label">Table tennis focus</span>
+                    <input
+                      className="text-input"
+                      onChange={(event) =>
+                        setOnboarding((current) => ({
+                          ...current,
+                          tableTennisFocus: event.target.value,
+                        }))
+                      }
+                      placeholder="Get a repeatable ready stance and recovery."
+                      value={onboarding.tableTennisFocus}
+                    />
+                  </label>
                 </div>
 
-                {quickActions.length > 0 ? (
-                  <div className="action-list">
-                    {quickActions.map((action, index) => (
-                      <article
-                        className={cx(
-                          "action-item",
-                          action.done && "action-item--done",
-                        )}
-                        key={action.id}
-                      >
-                        <div className="action-item__lead">
-                          {action.done ? (
-                            <CheckCircle2 size={18} />
-                          ) : (
-                            <Circle size={18} />
-                          )}
-                          <div>
-                            <strong>
-                              {index + 1}. {action.title}
-                            </strong>
-                            <p>{action.detail}</p>
-                          </div>
-                        </div>
+                <div className="stack-sm">
+                  <span className="field__label">Coaching tone</span>
+                  <div className="pill-row">
+                    {(["sensei", "hype", "drill_sergeant"] as Personality[]).map(
+                      (entry) => (
                         <button
-                          className="ghost-button"
-                          onClick={action.run}
+                          key={entry}
+                          className={cx(
+                            "pill-button",
+                            onboarding.accountabilityStyle === entry &&
+                              "pill-button--active",
+                          )}
+                          onClick={() =>
+                            setOnboarding((current) => ({
+                              ...current,
+                              accountabilityStyle: entry,
+                            }))
+                          }
                           type="button"
                         >
-                          {action.cta}
+                          <strong>{entry.replace("_", " ")}</strong>
+                          <span>
+                            {entry === "sensei"
+                              ? "Calm and technical."
+                              : entry === "hype"
+                                ? "Fast energy and momentum."
+                                : "Strict and accountability-first."}
+                          </span>
                         </button>
-                      </article>
-                    ))}
+                      ),
+                    )}
                   </div>
-                ) : null}
+                </div>
 
-                <div className="domain-rail">
+                <div className="action-row">
                   <button
-                    className="domain-card"
-                    onClick={() =>
-                      openKnowledge({
-                        domainGroup: "Sports",
-                        subdomain: "Chess",
-                        guidance:
-                          "Start with the result, then say what repeated, where you tilted, and what you should review next.",
-                      })
-                    }
+                    className="primary-button"
+                    onClick={saveOnboarding}
                     type="button"
                   >
-                    <div className="domain-card__topline">
-                      <span>Chess</span>
-                      <ArrowRight size={16} />
-                    </div>
-                    <strong>
-                      {chessEntry?.summary ?? "Capture a quick reflection by voice."}
-                    </strong>
-                    <p>
-                      {chessEntry?.nextAction ??
-                        (storedChessFocus ||
-                          "Use this space for losses, wins, tilt, and study notes.")}
-                    </p>
-                  </button>
-
-                  <button
-                    className="domain-card"
-                    onClick={openLive}
-                    type="button"
-                  >
-                    <div className="domain-card__topline">
-                      <span>Table tennis</span>
-                      <ArrowRight size={16} />
-                    </div>
-                    <strong>
-                      {fixList[0]?.item ??
-                        progressSnapshot?.currentFocus ??
-                        "Run a live session"}
-                    </strong>
-                    <p>{tableTennisNextStep}</p>
+                    <CheckCircle2 size={18} />
+                    Save focus
                   </button>
                 </div>
               </div>
             </SurfaceCard>
-          </div>
-
-          <div className="stack-lg">
-            <SurfaceCard
-              eyebrow="Overview"
-              title="Domain board"
-              description="A simple read of where Mentat has traction today."
-            >
-              <div className="stack-md">
-                <article className="overview-row">
-                  <div>
-                    <span className="section-label">Chess memory</span>
-                    <strong>
-                      {chessEntry?.summary ?? "No chess reflection saved yet."}
-                    </strong>
-                  </div>
-                  <span className="status-chip status-chip--memory">
-                    {chessLoggedToday
-                      ? "done today"
-                      : chessEntry
-                        ? "tracked"
-                        : "empty"}
-                  </span>
-                </article>
-                <article className="overview-row">
-                  <div>
-                    <span className="section-label">Table tennis focus</span>
-                    <strong>
-                      {progressSnapshot?.currentFocus ?? session.currentFocus}
-                    </strong>
-                  </div>
-                  <span className="status-chip status-chip--active">
-                    {liveSessionToday ? "done today" : session.status}
-                  </span>
-                </article>
-                <article className="overview-row">
-                  <div>
-                    <span className="section-label">Latest table tennis note</span>
-                    <strong>
-                      {tableTennisEntry?.summary ?? "No table tennis note yet."}
-                    </strong>
-                  </div>
-                  <span className="status-chip status-chip--pending">
-                    {tableTennisLoggedToday
-                      ? "done today"
-                      : tableTennisEntry
-                        ? "saved"
-                        : "new"}
-                  </span>
-                </article>
-              </div>
-            </SurfaceCard>
-
-            <ProgressOverviewCard
-              data={progress.data}
-              error={progress.error}
-              onRefresh={progress.refresh}
-              status={progress.status}
-            />
-          </div>
+          ) : null}
         </section>
       ) : null}
 
