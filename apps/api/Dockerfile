@@ -12,4 +12,4 @@ COPY . .
 
 RUN npm run build --workspace @mentat/api
 
-CMD ["npm", "run", "dev", "--workspace", "@mentat/api"]
+CMD ["node", "--import", "tsx", "apps/api/src/index.ts"]
