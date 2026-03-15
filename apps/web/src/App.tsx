@@ -3,7 +3,11 @@ import {
   ArrowRight,
   BrainCircuit,
   CheckCircle2,
+  Circle,
+  House,
+  Mic,
   PenSquare,
+  Radio,
   Swords,
 } from "lucide-react";
 
@@ -24,6 +28,12 @@ import { LOCAL_USER_ID } from "./lib/local-profile";
 import { cx } from "./lib/utils";
 
 type WorkspaceView = "home" | "live" | "knowledge";
+
+interface KnowledgePreset {
+  domainGroup: string;
+  subdomain: string;
+  guidance: string;
+}
 
 interface LocalOnboardingState {
   complete: boolean;
@@ -82,6 +92,12 @@ export function App() {
   const [userId] = useState(LOCAL_USER_ID);
   const [view, setView] = useState<WorkspaceView>("home");
   const [personality, setPersonality] = useState<Personality>("drill_sergeant");
+  const [knowledgePreset, setKnowledgePreset] = useState<KnowledgePreset | null>({
+    domainGroup: "Sports",
+    subdomain: "Chess",
+    guidance:
+      "Speak what happened, what pattern repeated, and what you should do next time.",
+  });
   const [onboarding, setOnboarding] = useState<LocalOnboardingState>(
     readStoredOnboarding,
   );
@@ -167,6 +183,77 @@ export function App() {
     setIsEditingProfile(!nextState.complete);
   };
 
+  const openKnowledge = (preset: KnowledgePreset) => {
+    setKnowledgePreset(preset);
+    setView("knowledge");
+  };
+
+  const openLive = () => {
+    setView("live");
+  };
+
+  const quickActions = onboarding.complete
+    ? [
+        {
+          id: "chess-reflection",
+          title: "Log your latest chess session",
+          detail:
+            chessEntry?.summary ??
+            "Capture the result, the pattern, and the next adjustment before it fades.",
+          cta: "Open chess note",
+          done: Boolean(chessEntry),
+          run: () =>
+            openKnowledge({
+              domainGroup: "Sports",
+              subdomain: "Chess",
+              guidance:
+                "Start with the result, then say what repeated, where you tilted, and what you should review next.",
+            }),
+        },
+        {
+          id: "tt-live",
+          title: "Run a table tennis readiness check",
+          detail:
+            progressSnapshot?.currentFocus ??
+            "Stand side-on with the racket visible and let Mentat clear the live readiness gate.",
+          cta: "Open live coaching",
+          done: Boolean(progressSnapshot?.sessionsCompleted),
+          run: openLive,
+        },
+        {
+          id: "tt-note",
+          title: "Store the main table tennis fix",
+          detail:
+            fixList[0]?.drill ??
+            tableTennisEntry?.summary ??
+            "Save one practice note so the next live session starts with context.",
+          cta: "Open table tennis note",
+          done: Boolean(tableTennisEntry),
+          run: () =>
+            openKnowledge({
+              domainGroup: "Sports",
+              subdomain: "Table Tennis",
+              guidance:
+                "Say what felt off, what one fix matters most, and what drill you want to repeat next time.",
+            }),
+        },
+      ]
+    : [];
+
+  const recommendedAction = onboarding.complete
+    ? quickActions.find((action) => !action.done) ?? quickActions[0]
+    : null;
+
+  const navItems: Array<{
+    view: WorkspaceView;
+    label: string;
+    icon: typeof House;
+  }> = [
+    { view: "home", label: "Home", icon: House },
+    { view: "live", label: "Live", icon: Radio },
+    { view: "knowledge", label: "Knowledge", icon: Mic },
+  ];
+
   return (
     <main className="app-shell app-shell--mentat">
       <header className="topbar">
@@ -179,17 +266,17 @@ export function App() {
         </div>
 
         <nav className="workspace-nav" aria-label="Workspace view">
-          {(["home", "live", "knowledge"] as WorkspaceView[]).map((entry) => (
+          {navItems.map((entry) => (
             <button
-              key={entry}
+              key={entry.view}
               className={cx(
                 "nav-pill",
-                entry === view && "nav-pill--active",
+                entry.view === view && "nav-pill--active",
               )}
-              onClick={() => setView(entry)}
+              onClick={() => setView(entry.view)}
               type="button"
             >
-              {entry}
+              {entry.label}
             </button>
           ))}
         </nav>
@@ -211,7 +298,14 @@ export function App() {
           <div className="masthead__actions">
             <button
               className="primary-button"
-              onClick={() => setView("knowledge")}
+              onClick={() =>
+                openKnowledge({
+                  domainGroup: "Sports",
+                  subdomain: "Chess",
+                  guidance:
+                    "Start with the result, then say what repeated, where you tilted, and what you should review next.",
+                })
+              }
               type="button"
             >
               <BrainCircuit size={18} />
@@ -219,7 +313,7 @@ export function App() {
             </button>
             <button
               className="ghost-button"
-              onClick={() => setView("live")}
+              onClick={openLive}
               type="button"
             >
               <Swords size={16} />
@@ -423,14 +517,76 @@ export function App() {
               description="This should become the clearest part of the product: what to do now, why, and where to go."
             >
               <div className="stack-md">
-                <div className="callout">
-                  <p className="callout__title">Recommended next action</p>
-                  <p>{chessNextStep}</p>
-                </div>
+                {recommendedAction ? (
+                  <div className="priority-card">
+                    <div className="priority-card__header">
+                      <div>
+                        <p className="eyebrow">Do this now</p>
+                        <h3>{recommendedAction.title}</h3>
+                      </div>
+                      <span className="status-chip status-chip--active">
+                        next
+                      </span>
+                    </div>
+                    <p>{recommendedAction.detail}</p>
+                    <div className="action-row">
+                      <button
+                        className="primary-button"
+                        onClick={recommendedAction.run}
+                        type="button"
+                      >
+                        <ArrowRight size={16} />
+                        {recommendedAction.cta}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="callout">
+                    <p className="callout__title">Recommended next action</p>
+                    <p>{chessNextStep}</p>
+                  </div>
+                )}
+
+                {quickActions.length > 0 ? (
+                  <div className="action-list">
+                    {quickActions.map((action, index) => (
+                      <article className="action-item" key={action.id}>
+                        <div className="action-item__lead">
+                          {action.done ? (
+                            <CheckCircle2 size={18} />
+                          ) : (
+                            <Circle size={18} />
+                          )}
+                          <div>
+                            <strong>
+                              {index + 1}. {action.title}
+                            </strong>
+                            <p>{action.detail}</p>
+                          </div>
+                        </div>
+                        <button
+                          className="ghost-button"
+                          onClick={action.run}
+                          type="button"
+                        >
+                          {action.cta}
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
+
                 <div className="domain-rail">
                   <button
                     className="domain-card"
-                    onClick={() => setView("knowledge")}
+                    onClick={() =>
+                      openKnowledge({
+                        domainGroup: "Sports",
+                        subdomain: "Chess",
+                        guidance:
+                          "Start with the result, then say what repeated, where you tilted, and what you should review next.",
+                      })
+                    }
                     type="button"
                   >
                     <div className="domain-card__topline">
@@ -449,7 +605,7 @@ export function App() {
 
                   <button
                     className="domain-card"
-                    onClick={() => setView("live")}
+                    onClick={openLive}
                     type="button"
                   >
                     <div className="domain-card__topline">
@@ -572,6 +728,7 @@ export function App() {
               entries={knowledge.entries}
               error={knowledge.error}
               isLoading={knowledge.status === "loading"}
+              preset={knowledgePreset}
               onSave={async (input) => {
                 await knowledge.saveEntry(input);
                 await knowledge.sync();
@@ -617,6 +774,27 @@ export function App() {
           </div>
         </section>
       ) : null}
+
+      <nav className="mobile-nav" aria-label="Workspace view">
+        {navItems.map((entry) => {
+          const Icon = entry.icon;
+
+          return (
+            <button
+              key={entry.view}
+              className={cx(
+                "mobile-nav__button",
+                entry.view === view && "mobile-nav__button--active",
+              )}
+              onClick={() => setView(entry.view)}
+              type="button"
+            >
+              <Icon size={18} />
+              <span>{entry.label}</span>
+            </button>
+          );
+        })}
+      </nav>
     </main>
   );
 }

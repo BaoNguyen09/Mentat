@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Mic, Save, Square, UploadCloud } from "lucide-react";
 
 import type { DomainKnowledgeEntry } from "@mentat/types";
@@ -12,6 +12,11 @@ interface KnowledgeCaptureCardProps {
   isLoading: boolean;
   error: string | null;
   syncMessage: string | null;
+  preset?: {
+    domainGroup: string;
+    subdomain: string;
+    guidance?: string;
+  } | null;
   onSave: (input: {
     domainGroup: string;
     subdomain: string;
@@ -28,6 +33,7 @@ export function KnowledgeCaptureCard({
   isLoading,
   error,
   syncMessage,
+  preset,
   onSave,
   onSync,
 }: KnowledgeCaptureCardProps) {
@@ -45,6 +51,15 @@ export function KnowledgeCaptureCard({
       isSaving,
     [domainGroup, isSaving, subdomain, voice.transcript],
   );
+
+  useEffect(() => {
+    if (!preset) {
+      return;
+    }
+
+    setDomainGroup(preset.domainGroup);
+    setSubdomain(preset.subdomain);
+  }, [preset]);
 
   return (
     <SurfaceCard
@@ -133,6 +148,12 @@ export function KnowledgeCaptureCard({
 
         {voice.error ? <div className="error-banner">{voice.error}</div> : null}
         {error ? <div className="error-banner">{error}</div> : null}
+        {preset?.guidance ? (
+          <div className="callout">
+            <p className="callout__title">Suggested prompt</p>
+            <p>{preset.guidance}</p>
+          </div>
+        ) : null}
         {syncMessage ? <div className="callout"><p>{syncMessage}</p></div> : null}
 
         <div className="action-row">

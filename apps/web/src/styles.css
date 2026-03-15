@@ -49,7 +49,7 @@ button {
 .app-shell {
   margin: 0 auto;
   max-width: 1480px;
-  padding: 28px 20px 56px;
+  padding: 24px 18px 104px;
 }
 
 .app-shell--mentat {
@@ -60,6 +60,7 @@ button {
 .topbar,
 .brand-lockup,
 .workspace-nav,
+.mobile-nav,
 .masthead__actions,
 .hero__stats,
 .app-grid,
@@ -126,6 +127,10 @@ button {
   gap: 10px;
 }
 
+.mobile-nav {
+  display: none;
+}
+
 .nav-pill {
   min-height: 42px;
   padding: 0 16px;
@@ -166,7 +171,7 @@ button {
 .masthead__copy h1,
 .hero__copy h1 {
   margin: 0;
-  font-size: clamp(2.7rem, 5vw, 5.4rem);
+  font-size: clamp(2.2rem, 5vw, 5.2rem);
   line-height: 0.96;
   letter-spacing: -0.05em;
 }
@@ -235,6 +240,70 @@ button {
 .hero-stat strong {
   font-size: 1rem;
   line-height: 1.4;
+}
+
+.priority-card,
+.action-item {
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.priority-card {
+  padding: 18px;
+}
+
+.priority-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.priority-card__header h3 {
+  margin: 4px 0 0;
+  font-size: 1.18rem;
+  line-height: 1.2;
+}
+
+.priority-card p {
+  margin: 0;
+  color: var(--muted-text);
+  line-height: 1.65;
+}
+
+.action-list {
+  display: grid;
+  gap: 12px;
+}
+
+.action-item {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.action-item__lead {
+  display: flex;
+  gap: 12px;
+}
+
+.action-item__lead svg {
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+.action-item__lead strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.98rem;
+}
+
+.action-item__lead p {
+  margin: 0;
+  color: var(--muted-text);
+  line-height: 1.55;
 }
 
 .app-grid,
@@ -853,7 +922,6 @@ button {
   .topbar,
   .app-grid,
   .dashboard-grid,
-  .masthead__stats,
   .setup-grid,
   .knowledge-grid,
   .summary-grid,
@@ -870,15 +938,21 @@ button {
     justify-self: start;
     grid-auto-flow: row;
   }
+
+  .masthead__stats,
+  .hero__stats,
+  .profile-form__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
   .app-shell {
-    padding: 20px 14px 40px;
+    padding: 16px 14px 104px;
   }
 
   .surface-card {
-    padding: 20px;
+    padding: 18px;
   }
 
   .topbar,
@@ -888,12 +962,157 @@ button {
   .recent-session,
   .fix-item__header,
   .fix-item__drill,
-  .overview-row {
+  .overview-row,
+  .priority-card__header {
     display: grid;
     grid-template-columns: 1fr;
   }
 
+  .topbar {
+    gap: 14px;
+    padding-bottom: 12px;
+  }
+
+  .brand-copy span {
+    display: none;
+  }
+
+  .workspace-nav {
+    display: none;
+  }
+
+  .mobile-nav {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--border-strong);
+    border-radius: 22px;
+    background: rgba(10, 10, 10, 0.94);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-nav__button {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    min-height: 58px;
+    padding: 8px 6px;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: var(--muted-text);
+  }
+
+  .mobile-nav__button span {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .mobile-nav__button--active {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+  }
+
+  .masthead {
+    gap: 14px;
+  }
+
   .masthead__copy h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
+  }
+
+  .masthead__lede,
+  .hero__lede {
+    font-size: 0.94rem;
+    line-height: 1.65;
+  }
+
+  .masthead__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .masthead__stats,
+  .hero__stats,
+  .profile-form__grid,
+  .summary-grid,
+  .live-preview__meta,
+  .score-grid,
+  .knowledge-grid,
+  .domain-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-stat,
+  .hero-stat,
+  .mini-panel,
+  .domain-card,
+  .overview-row,
+  .priority-card,
+  .action-item {
+    border-radius: 18px;
+  }
+
+  .dashboard-stat,
+  .hero-stat {
+    min-height: 88px;
+    padding: 16px;
+  }
+
+  .surface-card__header h2 {
+    font-size: 1.2rem;
+  }
+
+  .surface-card__description {
+    max-width: none;
+    font-size: 0.94rem;
+  }
+
+  .action-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .primary-button,
+  .ghost-button {
+    width: 100%;
+  }
+
+  .live-preview__frame {
+    min-height: 220px;
+    padding: 18px;
+  }
+
+  .live-preview__copy {
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+  }
+
+  .live-preview__copy h3 {
+    font-size: 1.5rem;
+  }
+
+  .timeline-item {
+    grid-template-columns: 12px 1fr;
+    gap: 10px;
+  }
+
+  .analysis-step {
+    grid-template-columns: 36px 1fr;
+    gap: 12px;
+  }
+
+  .analysis-step__index {
+    width: 36px;
+    height: 36px;
+    border-radius: 14px;
   }
 }
