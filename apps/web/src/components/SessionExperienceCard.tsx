@@ -68,9 +68,9 @@ export function SessionExperienceCard({
 
   return (
     <SurfaceCard
-      eyebrow="Live flow"
-      title="Session state"
-      description="This is the coaching control room for connection state, timeline, and finalization."
+      eyebrow="Live coaching"
+      title="Session workspace"
+      description="This is the live camera and microphone view, plus the readiness gate and session timeline."
       action={
         <div className={cx("status-chip", `status-chip--${status}`)}>
           {status}

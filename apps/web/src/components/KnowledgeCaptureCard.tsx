@@ -48,9 +48,9 @@ export function KnowledgeCaptureCard({
 
   return (
     <SurfaceCard
-      eyebrow="Knowledge"
-      title="Voice-track domains and sync to Obsidian"
-      description="Capture what you learned in a domain/subdomain, save it as structured knowledge, and sync the markdown pages into your Obsidian vault."
+      eyebrow="Knowledge base"
+      title="Capture a voice note"
+      description="Save what happened in a domain or subdomain, then sync it into your Obsidian knowledge base."
       action={
         <button
           className="ghost-button"

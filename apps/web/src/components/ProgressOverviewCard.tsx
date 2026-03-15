@@ -18,9 +18,9 @@ export function ProgressOverviewCard({
 }: ProgressOverviewCardProps) {
   return (
     <SurfaceCard
-      eyebrow="Dashboard"
-      title="Progress snapshot"
-      description="Read the shared progress contract and make continuity visible right away."
+      eyebrow="Progress"
+      title="Table tennis memory"
+      description="Recent sessions, streak, and the coaching thread Mentat is trying to carry forward."
       action={
         <button
           className="ghost-button"
