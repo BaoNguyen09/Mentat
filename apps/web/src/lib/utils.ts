@@ -20,3 +20,21 @@ export function formatSessionDate(isoDate: string) {
     minute: "2-digit",
   }).format(new Date(isoDate));
 }
+
+export function isSameLocalDay(
+  leftDate: string | Date,
+  rightDate: string | Date,
+) {
+  const left = new Date(leftDate);
+  const right = new Date(rightDate);
+
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+}
+
+export function isToday(value: string | Date) {
+  return isSameLocalDay(value, new Date());
+}

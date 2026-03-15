@@ -25,7 +25,7 @@ import { useKnowledge } from "./hooks/useKnowledge";
 import { useProgress } from "./hooks/useProgress";
 import { useSession } from "./hooks/useSession";
 import { LOCAL_USER_ID } from "./lib/local-profile";
-import { cx } from "./lib/utils";
+import { cx, isToday } from "./lib/utils";
 
 type WorkspaceView = "home" | "live" | "knowledge";
 
@@ -160,6 +160,14 @@ export function App() {
   const greetingName = onboarding.name.trim() || "Mentat user";
   const storedChessFocus = onboarding.chessFocus.trim();
   const storedTableTennisFocus = onboarding.tableTennisFocus.trim();
+  const recentLiveSummary = progress.data?.recentSessions.find((entry) =>
+    isToday(entry.sessionDate),
+  );
+  const chessLoggedToday = Boolean(chessEntry && isToday(chessEntry.createdAt));
+  const tableTennisLoggedToday = Boolean(
+    tableTennisEntry && isToday(tableTennisEntry.createdAt),
+  );
+  const liveSessionToday = Boolean(recentLiveSummary);
   const chessNextStep =
     chessEntry?.nextAction ??
     (storedChessFocus || "Capture a short chess reflection by voice.");
@@ -197,11 +205,12 @@ export function App() {
         {
           id: "chess-reflection",
           title: "Log your latest chess session",
-          detail:
-            chessEntry?.summary ??
-            "Capture the result, the pattern, and the next adjustment before it fades.",
+          detail: chessLoggedToday
+            ? chessEntry?.summary ??
+              "Your chess reflection is already saved for today."
+            : "Capture the result, the pattern, and the next adjustment before it fades.",
           cta: "Open chess note",
-          done: Boolean(chessEntry),
+          done: chessLoggedToday,
           run: () =>
             openKnowledge({
               domainGroup: "Sports",
@@ -213,22 +222,26 @@ export function App() {
         {
           id: "tt-live",
           title: "Run a table tennis readiness check",
-          detail:
-            progressSnapshot?.currentFocus ??
-            "Stand side-on with the racket visible and let Mentat clear the live readiness gate.",
+          detail: liveSessionToday
+            ? recentLiveSummary?.keyImprovement ??
+              "You already completed a live table tennis session today."
+            : progressSnapshot?.currentFocus ??
+              "Stand side-on with the racket visible and let Mentat clear the live readiness gate.",
           cta: "Open live coaching",
-          done: Boolean(progressSnapshot?.sessionsCompleted),
+          done: liveSessionToday,
           run: openLive,
         },
         {
           id: "tt-note",
           title: "Store the main table tennis fix",
-          detail:
-            fixList[0]?.drill ??
-            tableTennisEntry?.summary ??
-            "Save one practice note so the next live session starts with context.",
+          detail: tableTennisLoggedToday
+            ? tableTennisEntry?.summary ??
+              "Your table tennis practice note is already stored for today."
+            : fixList[0]?.drill ??
+              tableTennisEntry?.summary ??
+              "Save one practice note so the next live session starts with context.",
           cta: "Open table tennis note",
-          done: Boolean(tableTennisEntry),
+          done: tableTennisLoggedToday,
           run: () =>
             openKnowledge({
               domainGroup: "Sports",
@@ -243,6 +256,15 @@ export function App() {
   const recommendedAction = onboarding.complete
     ? quickActions.find((action) => !action.done) ?? quickActions[0]
     : null;
+  const todayCompletionCount = [
+    chessLoggedToday,
+    liveSessionToday,
+    tableTennisLoggedToday,
+  ].filter(Boolean).length;
+  const todayCompletionLabel =
+    todayCompletionCount === 3
+      ? "Today is fully logged."
+      : `${todayCompletionCount}/3 core steps done today`;
 
   const navItems: Array<{
     view: WorkspaceView;
@@ -338,6 +360,10 @@ export function App() {
           <article className="dashboard-stat">
             <span>Session streak</span>
             <strong>{progressSnapshot?.streak ?? 0}</strong>
+          </article>
+          <article className="dashboard-stat">
+            <span>Today</span>
+            <strong>{todayCompletionLabel}</strong>
           </article>
         </div>
       </section>
@@ -547,10 +573,31 @@ export function App() {
                   </div>
                 )}
 
+                <div className="today-grid">
+                  <div className="mini-panel">
+                    <span className="mini-panel__label">Chess note today</span>
+                    <strong>{chessLoggedToday ? "Done" : "Missing"}</strong>
+                  </div>
+                  <div className="mini-panel">
+                    <span className="mini-panel__label">Live session today</span>
+                    <strong>{liveSessionToday ? "Done" : "Missing"}</strong>
+                  </div>
+                  <div className="mini-panel">
+                    <span className="mini-panel__label">TT note today</span>
+                    <strong>{tableTennisLoggedToday ? "Done" : "Missing"}</strong>
+                  </div>
+                </div>
+
                 {quickActions.length > 0 ? (
                   <div className="action-list">
                     {quickActions.map((action, index) => (
-                      <article className="action-item" key={action.id}>
+                      <article
+                        className={cx(
+                          "action-item",
+                          action.done && "action-item--done",
+                        )}
+                        key={action.id}
+                      >
                         <div className="action-item__lead">
                           {action.done ? (
                             <CheckCircle2 size={18} />
@@ -639,7 +686,11 @@ export function App() {
                     </strong>
                   </div>
                   <span className="status-chip status-chip--memory">
-                    {chessEntry ? "tracked" : "empty"}
+                    {chessLoggedToday
+                      ? "done today"
+                      : chessEntry
+                        ? "tracked"
+                        : "empty"}
                   </span>
                 </article>
                 <article className="overview-row">
@@ -650,7 +701,7 @@ export function App() {
                     </strong>
                   </div>
                   <span className="status-chip status-chip--active">
-                    {session.status}
+                    {liveSessionToday ? "done today" : session.status}
                   </span>
                 </article>
                 <article className="overview-row">
@@ -661,7 +712,11 @@ export function App() {
                     </strong>
                   </div>
                   <span className="status-chip status-chip--pending">
-                    {tableTennisEntry ? "saved" : "new"}
+                    {tableTennisLoggedToday
+                      ? "done today"
+                      : tableTennisEntry
+                        ? "saved"
+                        : "new"}
                   </span>
                 </article>
               </div>

@@ -196,7 +196,7 @@ button {
 .hero__stats {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .dashboard-stat,
@@ -284,6 +284,10 @@ button {
   padding: 16px;
 }
 
+.action-item--done {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .action-item__lead {
   display: flex;
   gap: 12px;
@@ -310,6 +314,12 @@ button {
 .dashboard-grid {
   gap: 20px;
   grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
+}
+
+.today-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .stack-lg,
@@ -941,7 +951,8 @@ button {
 
   .masthead__stats,
   .hero__stats,
-  .profile-form__grid {
+  .profile-form__grid,
+  .today-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1042,6 +1053,7 @@ button {
   .masthead__stats,
   .hero__stats,
   .profile-form__grid,
+  .today-grid,
   .summary-grid,
   .live-preview__meta,
   .score-grid,
